@@ -20,6 +20,7 @@ http://man7.org/linux/man-pages/man2/ioctl_ns.2.html
 
 import os
 from fcntl import ioctl
+import struct
 from typing import TextIO
 
 # Linux namespace type constants; these are used with several of the
@@ -164,3 +165,21 @@ def get_parentns(nsref: [str, TextIO, int]) -> TextIO:
     file descriptor, or path string."""
     return get_nsrel(nsref, NS_GET_PARENT)
 
+
+def get_owner_uid(usernsref: [str, TextIO, int]) -> int:
+    """Returns the user ID of the owner of a user namespace, that is,
+    the user ID of the process that created the user namespace. The
+    user namespace parameter can be either an open file, file
+    descriptor, or path string."""
+    uid = struct.pack('I', 0)
+    if isinstance(usernsref, str):
+        with open(usernsref) as f:
+            uid = ioctl(f.fileno(), NS_GET_OWNER_UID, uid)
+    elif hasattr(usernsref, 'fileno'):
+        uid = ioctl(usernsref.fileno(), NS_GET_OWNER_UID, uid)
+    elif isinstance(usernsref, int):
+        uid = ioctl(usernsref, NS_GET_OWNER_UID, uid)
+    else:
+        raise TypeError('namespace reference must be str, int or '
+                        'TextIO, not {t}'.format(t=type(usernsref)))
+    return struct.unpack('I', uid)[0]

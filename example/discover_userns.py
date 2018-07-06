@@ -12,19 +12,23 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-from namespace_relations import get_parentns
+from namespace_relations import get_parentns, get_owner_uid
 import psutil
 import os
+import pwd
 import asciitree
 import asciitree.traversal
+from asciitree.drawing import BoxStyle, BOX_LIGHT
 from typing import cast, Dict, List, Optional, Tuple
 
 
 class UserNS:
 
-    def __init__(self, id: int, nsref: Optional[str]=None) -> None:
+    def __init__(self, id: int, nsref: Optional[str]=None,
+                 uid: Optional[int]=None) -> None:
         self.id = id
         self.nsref = nsref
+        self.uid = uid
         self._parent: 'UserNS' = None
         self.children: List['UserNS'] = []
 
@@ -54,9 +58,12 @@ root_userns: Dict[int, UserNS] = dict()
 for process in psutil.process_iter():
     try:
         userns_ref = '/proc/%d/ns/user' % process.pid
-        userns_id = os.stat(userns_ref).st_ino
-        if userns_id not in userns_index:
-            userns_index[userns_id] = UserNS(userns_id, userns_ref)
+        with open(userns_ref) as f_userns:
+            userns_id = os.stat(f_userns.fileno()).st_ino
+            if userns_id not in userns_index:
+                owner_uid = get_owner_uid(f_userns)
+                userns_index[userns_id] = UserNS(
+                    userns_id, userns_ref, owner_uid)
     except PermissionError:
         pass
 
@@ -83,8 +90,9 @@ for _, userns in userns_index.copy().items():
                 # might need to add these newly found parents to our
                 # user namespace index.
                 if parent_userns_id not in userns_index:
+                    parent_uid = get_owner_uid(parent_userns_ref)
                     userns_index[parent_userns_id] = UserNS(
-                        parent_userns_id)
+                        parent_userns_id, uid=parent_uid)
                 # Wire up our parent-child user namespace relationship.
                 userns_index[userns_id].parent = \
                     userns_index[parent_userns_id]
@@ -136,9 +144,14 @@ class UserNSTraversal(asciitree.traversal.Traversal):
         """Returns the text for a user namespace node. It consists of
         the user namespace identifier (inode number)."""
         if node.id:
-            return 'user:[%d]' % node.id
+            return 'user:[%d] owner %s (%d)' % (
+                node.id, pwd.getpwuid(node.uid).pw_name, node.uid)
         return '?'
 
 
 # render an ASCII tree using our user namespace traverser...
-print(asciitree.LeftAligned(traverse=UserNSTraversal())(root_userns))
+print(
+    asciitree.LeftAligned(
+        traverse=UserNSTraversal(),
+        draw=BoxStyle(gfx=BOX_LIGHT, horiz_len=2)
+    )(root_userns))

@@ -18,10 +18,15 @@ http://man7.org/linux/man-pages/man2/ioctl_ns.2.html
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
+
 import os
 from fcntl import ioctl
 import struct
 from typing import TextIO
+
+
+# library/package semantic version
+__version__ = '0.1.0'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also

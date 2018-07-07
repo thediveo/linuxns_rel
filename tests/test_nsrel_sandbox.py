@@ -13,7 +13,7 @@
 # permissions and limitations under the License.
 
 import unittest
-import namespace_relations as nsr
+import linuxns_rel as nsr
 import subprocess
 import os
 

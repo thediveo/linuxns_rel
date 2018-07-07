@@ -2,8 +2,9 @@
 
 > **NOTE:** Python 3.6+ supported only
 
-This Python package allows discovering the following Linux Kernel
-namespace relationships and properties:
+This Python 3 package allows discovering the following Linux Kernel
+namespace relationships and properties, without having to delve into
+`ioctl()` hell:
 
 - the _owning_ user namespace of another Linux kernel namespace.
 - the _parent_ namespace of either a user or a PID namespace.
@@ -44,12 +45,17 @@ user:[4026531837] owner root (0)
  └── user:[4026532583] owner foobar (1000)
 ```
 
-This is the command used in another terminal session to create some
-more hierarchical user namespaces:
+If you have either Chromium or/and Firefox running, then these will
+add some user namespaces in order to sandbox their inner workings. And
+to add in some more hierarchical user namespaces, in another terminal
+session simply issue the following command:
 
 ```bash
 $ unshare -Ur unshare -Ur unshare -Ur unshare -Ur
 ```
+
+Debian users may need to `sudo` because their distro's default
+configuration prohibits ordinary users to create new user namespaces.
 
 # API Examples
 

@@ -75,6 +75,11 @@ pid:[4026531836] owner user:[4026531837] root (0)
      └── pid:[4026532581] owner user:[4026532464] foobar (1000)
 ```
 
+Don't worry that the PID namespace hierarchy doesn't match the user
+namespace hierarchy. That's perfectly fine, depending on which programs
+run. In our example, we didn't create new PID namespaces when using
+`unshare`, so we see only additional PID namespaces created by
+Chromium (Firefox doesn't create them though).
 
 # API Examples
 

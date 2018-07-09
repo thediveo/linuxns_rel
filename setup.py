@@ -23,7 +23,8 @@ setup(
     packages=['linuxns_rel', 'linuxns_rel.tools'],
     entry_points= {
         'console_scripts': [
-            'lsuns=linuxns_rel.tools.lsuns:main'
+            'lsuserns=linuxns_rel.tools.lshierns:lsuserns',
+            'lspidns=linuxns_rel.tools.lshierns:lspidns'
         ]
     }
 )

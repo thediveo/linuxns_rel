@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 
-from distutils.core import setup
+from setuptools import setup
 from linuxns_rel import __version__
+import os
+
+with open(os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'README.md'
+          )) as f:
+    ldesc = f.read()
 
 setup(
     name='linuxns-rel',
     version=__version__,
     description='Linux namespace relationships library',
+    long_description=ldesc,
+    long_description_content_type='text/markdown',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: POSIX :: Linux',

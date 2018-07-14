@@ -47,6 +47,7 @@ class NsrTestsWithSandbox(unittest.TestCase):
             netns_userns_id, userns_id,
             'get_userns() returning sandbox user namespace')
 
+    @unittest.skip
     def test_get_parent_user(self):
         root_userns_id = os.stat('/proc/self/ns/user').st_ino
         with nsr.get_userns('/proc/%d/ns/net' % self.sandbox_pid) as userns_f:
@@ -56,5 +57,6 @@ class NsrTestsWithSandbox(unittest.TestCase):
             root_userns_id, parent_userns_id,
             'get_parentns() returning root user namespace')
 
+    @unittest.skip
     def test_rootroot_use(self):
         nsr.get_parentns('/proc/self/ns/user')

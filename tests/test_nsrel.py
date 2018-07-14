@@ -13,26 +13,11 @@
 # permissions and limitations under the License.
 
 import linuxns_rel as nsr
-import unittest
-from typing import Tuple
+import tests.linuxnsrel
+import errno
 
 
-class LxNsRelationsBaseTests(unittest.TestCase):
-
-    NAMESPACES = (
-        ('cgroup', nsr.CLONE_NEWCGROUP),
-        ('ipc', nsr.CLONE_NEWIPC),
-        ('mnt', nsr.CLONE_NEWNS),
-        ('net', nsr.CLONE_NEWNET),
-        ('pid', nsr.CLONE_NEWPID),
-        ('user', nsr.CLONE_NEWUSER),
-        ('uts', nsr.CLONE_NEWUTS)
-    )  # type: Tuple[Tuple[str, int]]
-
-    def nspath(self, ns_type: str) -> str:
-        """Returns filesystem path to the namespace of the specified
-        type for the current process."""
-        return '/proc/self/ns/%s' % ns_type
+class LxNsRelationsBaseTests(tests.linuxnsrel.LxNsRelationsTests):
 
     def test_nstype_str(self):
         for ns_name, ns_type in self.NAMESPACES:
@@ -87,3 +72,89 @@ class LxNsRelationsBaseTests(unittest.TestCase):
                 TypeError,
                 msg='accepting None namespace reference parameter'):
             nsr.get_nstype(None)
+
+    def test_get_userns(self):
+        user_nsid = self.nsid('user')
+        # by path...
+        with nsr.get_userns(self.nspath('net')) as owner_ns:
+            self.assertEqual(
+                self.file_nsid(owner_ns),
+                user_nsid,
+                'invalid owning user namespace returned'
+            )
+        with open(self.nspath('net')) as nsref:
+            # by file...
+            with nsr.get_userns(nsref) as owner_ns:
+                self.assertEqual(
+                    self.file_nsid(owner_ns),
+                    user_nsid,
+                    'invalid owning user namespace returned'
+                )
+            # by fd...
+            with nsr.get_userns(nsref.fileno()) as owner_ns:
+                self.assertEqual(
+                    self.file_nsid(owner_ns),
+                    user_nsid,
+                    'invalid owning user namespace returned'
+                )
+
+    def test_get_userns_illegal_arg(self):
+        with self.assertRaises(
+                TypeError, msg='accepts invalid namespace value'):
+            nsr.get_userns(42.0)
+
+    def test_getparentns_in_root(self):
+        with self.assertRaises(
+                PermissionError, msg='parent of root user'):
+            nsr.get_parentns(self.nspath('user'))
+
+    def test_getparentns_nonhierarchical_namespace(self):
+        with self.assertRaises(
+                OSError, msg='net namespace has a parent, seriously?')\
+                as oserr:
+            nsr.get_parentns(self.nspath('net'))
+        self.assertEqual(
+            oserr.exception.errno, errno.EINVAL,
+            'no parent for non-hierarchical namespace'
+        )
+
+    def test_getparentns_illegal_arg(self):
+        with self.assertRaises(
+                TypeError,
+                msg='accepting float namespace reference parameter'):
+            nsr.get_parentns(42.0)
+        with self.assertRaises(
+                TypeError,
+                msg='accepting None namespace reference parameter'):
+            nsr.get_parentns(None)
+
+    def test_owner_uid(self):
+        # by path...
+        self.assertEqual(
+            nsr.get_owner_uid(self.nspath('user')),
+            0,
+            'owner ID of root user namespace not root'
+        )
+        with open(self.nspath('user')) as nsref:
+            # by file...
+            self.assertEqual(
+                nsr.get_owner_uid(nsref),
+                0,
+                'owner ID of root user namespace not root'
+            )
+            # by fd...
+            self.assertEqual(
+                nsr.get_owner_uid(nsref.fileno()),
+                0,
+                'owner ID of root user namespace not root'
+            )
+
+    def test_owner_uid_illegal_arg(self):
+        with self.assertRaises(
+                TypeError,
+                msg='accepting float namespace reference parameter'):
+            nsr.get_owner_uid(42.0)
+        with self.assertRaises(
+                TypeError,
+                msg='accepting None namespace reference parameter'):
+            nsr.get_owner_uid(None)

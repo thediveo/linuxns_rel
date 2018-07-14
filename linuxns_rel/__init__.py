@@ -176,7 +176,9 @@ def get_owner_uid(usernsref: [str, TextIO, int]) -> int:
     the user ID of the process that created the user namespace. The
     user namespace parameter can be either an open file, file
     descriptor, or path string."""
-    uid = struct.pack('I', 0)
+    # Ensure to catch most silent errors by initializing the user ID
+    # return value with "MAXINT".
+    uid = struct.pack('I', 2**32-42)
     if isinstance(usernsref, str):
         with open(usernsref) as f:
             uid = ioctl(f.fileno(), NS_GET_OWNER_UID, uid)

@@ -1,4 +1,3 @@
-dist: bionic
 language: python
 python:
   - "3.6"
@@ -7,7 +6,17 @@ install:
   - pip3 install -e .[dev]
 
 script:
-  - coverage run -m unittest discover
-  - coverage report
+  # As long as Travis CI uses old LTS versions with Linux kernels
+  # which don't support the namespace-related ioctl's, we need to
+  # skip our tests.
+  #- coverage run -m unittest discover
+  #- coverage report
 
-#
+deploy:
+  provider: pypi
+  distributions: "sdist bdist_wheel"
+  user: "thediveo"
+  password:
+    secure: "X+mVHPNYCorFqQCJtJooN1p3mRrQkcuD3lhEyWTg63S/ZE7zeECWeDVBFGV6WN56uhilvYow/gUHNSEjn/pk0//WU5FvWQnL1J0GENwTXycbKrtk9BEcLoLODAxRicHvQhwl/wrTfV02IRSvtAXz/jpO5WCDkBvPnKiEShMzFiSWFTdKw89Z18LhD7mXoqB3FG3QcB2Q+KaFuXc46RL0A8jbPliRtveS2PoNemEh+CY5ZxbF7U4ALn5yS9RfNnE9sz0EZGD3nfGCKINA72CVKJrgVySncnOZJuyYc2zqugKQZDrfl2aJ5bIVlMB40LOTXrtN5bbqs42bxPasC6KqodNCLn+8SSoMjeoipeq4U7YVE0lZIQgeYBSzXDkeMyYkqXBlIR5JGUq5BY7DdHGjFdGgzVm6J0BwdXVnhYWD5uKYLTnGE67u+TFPGMWXoSbZ8y3QSgJJ2E5LbP4Vz6tdvpYtIrAp6wdNJv8HnfZ82ND2kD53H2YAIwx8JfRseVXehpZyfVsplfjABYLSTayiMCrIhOwvJu1K/iQVkvpt6qwrDpUl7SqomrCTVv4MaRDEEhqfr0ZjKsZYpIaeyMFBJ01otMxXxTtJwjJa5tpNQrTdR5zh1LEL+rN2CMlfxfc9niuxQ4P3k+Z/dv1xsEDSQTwzN7mPoC9ndPWHn6Q/H60="
+  on:
+    tags: true

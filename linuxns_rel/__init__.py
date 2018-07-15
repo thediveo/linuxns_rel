@@ -26,7 +26,7 @@ from typing import TextIO
 
 
 # library/package semantic version
-__version__ = '0.1.2'
+__version__ = '0.9.0'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also

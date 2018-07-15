@@ -30,10 +30,14 @@ setup(
     author_email='thediveo@gmx.eu',
     url='https://github.com/TheDiveO/linuxns_rel',
     packages=['linuxns_rel', 'linuxns_rel.tools'],
-    entry_points= {
+    entry_points={
         'console_scripts': [
             'lsuserns=linuxns_rel.tools.lshierns:lsuserns',
             'lspidns=linuxns_rel.tools.lshierns:lspidns'
         ]
-    }, install_requires=['psutil', 'asciitree']
+    },
+    install_requires=[
+        'psutil',
+        'asciitree'
+    ]
 )

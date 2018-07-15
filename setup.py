@@ -39,5 +39,10 @@ setup(
     install_requires=[
         'psutil',
         'asciitree'
-    ]
+    ],
+    extras_require={
+        'dev': [
+            'coverage'
+        ]
+    }
 )

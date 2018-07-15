@@ -62,7 +62,7 @@ _IOC_WRITE = 1
 _IOC_READ = 2
 
 
-# noinspection PyShadowingBuiltins
+# noinspection PyShadowingBuiltins,PyPep8Naming
 def _IOC(dir: int, type: int, nr: int, size: int) -> int:
     """Returns an ioctl() request value, calculated for a specific ioctl
     call properties of parameter direction in/out, parameter size,
@@ -83,7 +83,7 @@ def _IOC(dir: int, type: int, nr: int, size: int) -> int:
             (size << _IOC_SIZESHIFT))
 
 
-# noinspection PyShadowingBuiltins
+# noinspection PyShadowingBuiltins,PyPep8Naming
 def _IO(type: int, nr: int) -> int:
     return _IOC(_IOC_NONE, type, nr, 0)
 

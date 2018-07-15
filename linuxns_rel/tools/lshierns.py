@@ -1,5 +1,5 @@
-"""Discovers the available user namespaces and prints them in their
-tree hierarchy to the console."""
+"""Discovers the available user or PID namespaces and prints them in
+a tree hierarchy to the console."""
 
 # Copyright 2018 Harald Albrecht
 #
@@ -26,7 +26,7 @@ import asciitree
 import asciitree.traversal
 from asciitree.drawing import BoxStyle, BOX_LIGHT
 from asciitree.traversal import Traversal
-from typing import cast, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 class HierarchicalNamespaceIndex:
@@ -67,7 +67,8 @@ class HierarchicalNamespaceIndex:
         # only then get the owner's user ID. Or not, thanks to our
         # "AWFULLY GREAT" namespace API. So "AWESOME".
         with get_userns(ns_f) as owner_f:
-            return get_owner_uid(owner_f), os.stat(owner_f.fileno()).st_ino
+            return get_owner_uid(owner_f), \
+                   os.stat(owner_f.fileno()).st_ino
 
     def _discover_from_proc(self) -> None:
         """Discovers namespaces via `/proc/[PID]/ns/[TYPE]`."""
@@ -193,8 +194,8 @@ class HierarchicalNamespaceIndex:
         traversal object."""
         print(
             asciitree.LeftAligned(
-                traverse=HierarchicalNamespaceIndex
-                    .HierarchicalNamespaceTraversal(self._nstypename),
+                traverse=HierarchicalNamespaceIndex.
+                HierarchicalNamespaceTraversal(self._nstypename),
                 draw=BoxStyle(gfx=BOX_LIGHT, horiz_len=2)
             )(self._roots))
 
@@ -205,6 +206,7 @@ class HierarchicalNamespace:
     referenced, at the hierarchical parent-child relations to other
     user namespaces."""
 
+    # noinspection PyShadowingBuiltins
     def __init__(self, id: int, uid: int, ownerns_id: int,
                  nsref: Optional[str] = None) -> None:
         """Represents a Linux user namespace, together with its
@@ -248,6 +250,7 @@ def lsuserns():
         description='Show Linux user namespace tree.'
     )
 
+    # noinspection PyUnusedLocal
     args = parser.parse_args()
     HierarchicalNamespaceIndex(CLONE_NEWUSER).render()
 
@@ -260,6 +263,7 @@ def lspidns():
         description='Show Linux PID namespace tree.'
     )
 
+    # noinspection PyUnusedLocal
     args = parser.parse_args()
     HierarchicalNamespaceIndex(CLONE_NEWPID).render()
 

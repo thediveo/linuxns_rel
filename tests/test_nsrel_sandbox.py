@@ -17,7 +17,6 @@ import linuxns_rel as nsr
 import tests.linuxnsrel
 import subprocess
 import time
-import unittest
 
 
 # noinspection PyPep8Naming

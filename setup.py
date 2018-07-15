@@ -35,5 +35,5 @@ setup(
             'lsuserns=linuxns_rel.tools.lshierns:lsuserns',
             'lspidns=linuxns_rel.tools.lshierns:lspidns'
         ]
-    }
+    }, install_requires=['psutil', 'asciitree']
 )

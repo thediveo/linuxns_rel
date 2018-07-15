@@ -20,7 +20,7 @@ import time
 
 
 # noinspection PyPep8Naming
-def skipWithoutSandbox(func):
+def skipWithoutSandbox(func):  # pragma: no cover
     """Decorates test functions to be skipped automatically if the
     unshare sandbox could not be created (due to insufficient
     privileges or kernel.unprivileged_userns_clone=0)."""
@@ -38,7 +38,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
     sandbox = None  # type: subprocess.Popen
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls): # pragma: no cover
         """Sets up a "sandbox" consisting of a sleeping cat in its
         own user namespace. No cats are being harmed during these
         tests. Only at the end, but don't tell anyone."""
@@ -67,7 +67,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
             time.sleep(0.1)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls): # pragma: no cover
         """Tears down the sandbox with the sleeping cat. It might be
         Schrödinger's Cat. Or it might not."""
         if cls.sandbox:

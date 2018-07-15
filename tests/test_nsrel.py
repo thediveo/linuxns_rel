@@ -130,9 +130,9 @@ class LxNsRelationsBaseTests(tests.linuxnsrel.LxNsRelationsTests):
 
     def test_owner_uid(self):
         # by path...
-        self.assertEqual(
+        self.assertIn(
             nsr.get_owner_uid(self.nspath('user')),
-            0,
+            (0, 65534), # ...covers containerized CI test
             'owner ID of root user namespace not root'
         )
         with open(self.nspath('user')) as nsref:

@@ -16,9 +16,21 @@
 import linuxns_rel as nsr
 import tests.linuxnsrel
 import subprocess
-import os
-import unittest
 import time
+import unittest
+
+
+# noinspection PyPep8Naming
+def skipWithoutSandbox(func):
+    """Decorates test functions to be skipped automatically if the
+    unshare sandbox could not be created (due to insufficient
+    privileges or kernel.unprivileged_userns_clone=0)."""
+    def wrapper(self, *args, **kwargs):
+        if getattr(self, 'sandbox', None):
+            func(self, *args, **kwargs)
+        else:
+            self.skipTest('no user unshare sandbox available')
+    return wrapper
 
 
 class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
@@ -31,6 +43,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
         """Sets up a "sandbox" consisting of a sleeping cat in its
         own user namespace. No cats are being harmed during these
         tests. Only at the end, but don't tell anyone."""
+        # Oh, the joy of sysctl -w kernel.unprivileged_userns_clone=1
         cls.sandbox = subprocess.Popen([
             'unshare',  # note that we don't fork!
             '--user',  # create new user namespace
@@ -47,20 +60,27 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
         userns_id = cls.nsid(cls.nspath('user'))
         while userns_id == cls.nsid(
                 cls.nspath('user', cls.sandbox.pid)):
+            if cls.sandbox.poll():
+                print('Skipping sandbox tests, is sysctl '
+                      'kernel.unprivileged_userns_clone disabled?')
+                cls.sandbox = None
+                break
             time.sleep(0.1)
 
     @classmethod
     def tearDownClass(cls):
         """Tears down the sandbox with the sleeping cat. It might be
         Schrödinger's Cat. Or it might not."""
-        cls.sandbox.terminate()
-        cls.sandbox.wait()
+        if cls.sandbox:
+            cls.sandbox.terminate()
+            cls.sandbox.wait()
 
     @property
     def sandbox_pid(self):
         """Returns the PID of the sandbox, which is the sleeping cat."""
         return NsrTestsWithSandbox.sandbox.pid
 
+    @skipWithoutSandbox
     def test_get_user_sandbox(self):
         userns_id = self.nsid(self.nspath('user', self.sandbox_pid))
         with nsr.get_userns(self.nspath('net', self.sandbox_pid)) \
@@ -70,6 +90,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
             netns_userns_id, userns_id,
             'get_userns returning sandbox user namespace')
 
+    @skipWithoutSandbox
     def test_get_parent_user(self):
         root_userns_id = self.nsid(self.nspath('user'))
         with nsr.get_userns(self.nspath('net', self.sandbox_pid)) \
@@ -80,6 +101,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
             root_userns_id, parent_userns_id,
             'get_parentns returning root user namespace')
 
+    @skipWithoutSandbox
     def test_get_user_of_user(self):
         root_userns_id = self.nsid(self.nspath('user'))
         with nsr.get_userns(self.nspath('user', self.sandbox_pid)) \

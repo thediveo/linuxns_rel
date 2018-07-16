@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 0.9.0 documentation</title>
+  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 1.0.0 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                0.9.0
+                1.0.0
               </div>
             
           
@@ -160,13 +160,38 @@
 <span class="target" id="module-linuxns_rel"></span><p>Introspection of Linux kernel namespace relationships, such as
 owning user namespace, parent namespace of a PID or user namespace,
 the owner’s user ID of a namespace, and some more.</p>
-<p>See also ioctl-ns(2):
-<a class="reference external" href="http://man7.org/linux/man-pages/man2/ioctl_ns.2.html">http://man7.org/linux/man-pages/man2/ioctl_ns.2.html</a></p>
+<ul class="simple">
+<li>PyPi: <a class="reference external" href="https://pypi.org/project/linuxns-rel/">https://pypi.org/project/linuxns-rel/</a> … install with
+<code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">linuxns-rel</span></code></li>
+<li>GitHub project: <a class="reference external" href="https://github.com/TheDiveO/linuxns_rel">https://github.com/TheDiveO/linuxns_rel</a></li>
+<li>ioctl-ns(2):
+<a class="reference external" href="http://man7.org/linux/man-pages/man2/ioctl_ns.2.html">http://man7.org/linux/man-pages/man2/ioctl_ns.2.html</a></li>
+</ul>
 <div class="section" id="cli">
 <h2>CLI<a class="headerlink" href="#cli" title="Permalink to this headline">¶</a></h2>
-<p>This library comes with two simple CLI tools: <cite>lsuserns</cite> and <cite>lspidns</cite>.
-These simply pretty-print the tree of Linux user (or PID) namespaces
-as can be discovered from the visible running processes.</p>
+<p>This library comes with two simple CLI tools: <code class="docutils literal notranslate"><span class="pre">lsuserns</span></code> and
+<code class="docutils literal notranslate"><span class="pre">lspidns</span></code>. These simply pretty-print the tree of Linux user (or
+PID) namespaces as can be discovered from the visible running
+processes.</p>
+<p>To add some spice to the output, first open some user namespaces in
+a separate terminal session (fails? see
+<a class="reference external" href="https://unix.stackexchange.com/questions/303213/how-to-enable-user-namespaces-in-the-kernel-for-unprivileged-unshare">how to enable user_namespaces in the kernel? for unprivileged “unshare”</a>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unshare -Ur unshare -Ur unshare -Ur unshare -Ur
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> lsuserns
+<span class="go">user:[4026531837] owner root (0)</span>
+<span class="go"> ├── user:[4026532466] owner foo (1000)</span>
+<span class="go"> ├── user:[4026532636] owner foo (1000)</span>
+<span class="go"> ├── user:[4026532635] owner foo (1000)</span>
+<span class="go"> ├── user:[4026532916] owner foo (1000)</span>
+<span class="go"> ├── user:[4026532693] owner foo (1000)</span>
+<span class="go"> └── user:[4026532578] owner foo (1000)</span>
+<span class="go">     └── user:[4026532634] owner foo (1000)</span>
+<span class="go">         └── user:[4026532694] owner foo (1000)</span>
+<span class="go">             └── user:[4026532753] owner foo (1000)</span>
+</pre></div>
+</div>
 <p>Both CLI tools are implemented in the same module
 <code class="xref py py-mod docutils literal notranslate"><span class="pre">linuxns_rel.tools.lshierns</span></code>.</p>
 </div>
@@ -426,7 +451,7 @@ might already guess: a user namespace. But let’s check that:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.0',
+            VERSION:'1.0.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>linuxns_rel &mdash; linuxns-rel 0.9.0 documentation</title>
+  <title>linuxns_rel &mdash; linuxns-rel 1.0.0 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                0.9.0
+                1.0.0
               </div>
             
           
@@ -143,19 +143,60 @@
            <div itemprop="articleBody">
             
   <h1>Source code for linuxns_rel</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Introspection of Linux kernel namespace relationships, such as</span>
+<span></span><span class="c1"># Copyright 2018 Harald Albrecht</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or</span>
+<span class="c1"># implied. See the License for the specific language governing</span>
+<span class="c1"># permissions and limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Introspection of Linux kernel namespace relationships, such as</span>
 <span class="sd">owning user namespace, parent namespace of a PID or user namespace,</span>
 <span class="sd">the owner&#39;s user ID of a namespace, and some more.</span>
 
-<span class="sd">See also ioctl-ns(2):</span>
-<span class="sd">http://man7.org/linux/man-pages/man2/ioctl_ns.2.html</span>
+<span class="sd">* PyPi: https://pypi.org/project/linuxns-rel/ ... install with</span>
+<span class="sd">  ``pip3 install linuxns-rel``</span>
+<span class="sd">* GitHub project: https://github.com/TheDiveO/linuxns_rel</span>
+<span class="sd">* ioctl-ns(2):</span>
+<span class="sd">  http://man7.org/linux/man-pages/man2/ioctl_ns.2.html</span>
 
 <span class="sd">CLI</span>
 <span class="sd">---</span>
 
-<span class="sd">This library comes with two simple CLI tools: `lsuserns` and `lspidns`.</span>
-<span class="sd">These simply pretty-print the tree of Linux user (or PID) namespaces</span>
-<span class="sd">as can be discovered from the visible running processes.</span>
+<span class="sd">This library comes with two simple CLI tools: ``lsuserns`` and</span>
+<span class="sd">``lspidns``. These simply pretty-print the tree of Linux user (or</span>
+<span class="sd">PID) namespaces as can be discovered from the visible running</span>
+<span class="sd">processes.</span>
+
+<span class="sd">To add some spice to the output, first open some user namespaces in</span>
+<span class="sd">a separate terminal session (fails? see</span>
+<span class="sd">`how to enable user_namespaces in the kernel? for unprivileged &quot;unshare&quot;</span>
+<span class="sd">&lt;https://unix.stackexchange.com/questions/303213/how-to-enable-user-namespaces-in-the-kernel-for-unprivileged-unshare&gt;`_):</span>
+
+<span class="sd">.. code-block:: console</span>
+
+<span class="sd">    $ unshare -Ur unshare -Ur unshare -Ur unshare -Ur</span>
+
+<span class="sd">.. code-block:: console</span>
+
+<span class="sd">    $ lsuserns</span>
+<span class="sd">    user:[4026531837] owner root (0)</span>
+<span class="sd">     ├── user:[4026532466] owner foo (1000)</span>
+<span class="sd">     ├── user:[4026532636] owner foo (1000)</span>
+<span class="sd">     ├── user:[4026532635] owner foo (1000)</span>
+<span class="sd">     ├── user:[4026532916] owner foo (1000)</span>
+<span class="sd">     ├── user:[4026532693] owner foo (1000)</span>
+<span class="sd">     └── user:[4026532578] owner foo (1000)</span>
+<span class="sd">         └── user:[4026532634] owner foo (1000)</span>
+<span class="sd">             └── user:[4026532694] owner foo (1000)</span>
+<span class="sd">                 └── user:[4026532753] owner foo (1000)</span>
 
 <span class="sd">Both CLI tools are implemented in the same module</span>
 <span class="sd">:mod:`linuxns_rel.tools.lshierns`.</span>
@@ -211,20 +252,6 @@
 <span class="sd">---</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c1"># Copyright 2018 Harald Albrecht</span>
-<span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
-<span class="c1"># you may not use this file except in compliance with the License.</span>
-<span class="c1"># You may obtain a copy of the License at</span>
-<span class="c1">#</span>
-<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
-<span class="c1">#</span>
-<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
-<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or</span>
-<span class="c1"># implied. See the License for the specific language governing</span>
-<span class="c1"># permissions and limitations under the License.</span>
-
 
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">fcntl</span> <span class="k">import</span> <span class="n">ioctl</span>
@@ -233,7 +260,7 @@
 
 
 <span class="c1"># library/package semantic version</span>
-<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;0.9.0&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.0&#39;</span>
 
 <span class="c1"># Linux namespace type constants; these are used with several of the</span>
 <span class="c1"># namespace related functions, such as clone() in particular, but also</span>
@@ -530,7 +557,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.9.0',
+            VERSION:'1.0.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

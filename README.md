@@ -22,6 +22,14 @@ this Python library.
 $ pip3 install linuxns-rel
 ```
 
+
+# API Documentation
+
+Please head over to our 
+[linuxns_rel API documentation](https://thediveo.github.io/linuxns_rel/)
+on GitHub Pages.
+
+
 # CLI Examples
 
 ## List User Namespaces
@@ -81,25 +89,6 @@ run. In our example, we didn't create new PID namespaces when using
 `unshare`, so we see only additional PID namespaces created by
 Chromium (Firefox doesn't create them though).
 
-# API Examples
-
-```python
-import linuxns_rel
-
-# Get owning user namespace for current network namespace
-with linuxns_rel.get_userns('/proc/self/ns/net') as of:
-    print(linuxns_rel.get_owner_uid(of))
-
-# Get parent PID namespace for current PID namespace
-# Warning: will raise a PermissionError when asked in the root PID
-# namespace or when the parent PID namespace in inaccessible.
-with linuxns_rel.get_parentns('/proc/self/ns/pid') as pf:
-    pass
-
-# Print type of namespace referenced by an open file
-print(linuxns_rel.nstype_str(linuxns_rel.get_nstype('/proc/self/ns/net')))
-
-```
 
 # Potentially FAQs
 

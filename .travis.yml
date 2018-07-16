@@ -26,7 +26,7 @@ deploy:
       secure: "fxkuKV1wM2cyEWO2Hv4BSZZoVaWDyb+3rN6bmPHVaRrr36Cg3YOG40tUuYRCtC2u6HxQG0mv2P1f2cAx+IH92OD1UN+XA9m7hlADjLELjqwU++hBMy070woL7NuulAmCR2monW6qSVStQDFyoi4M4WtocLQfhLpyxidfA0sCENpkvJqWpTx8tu5yMsQyW0DgQTsdWr8bZri41AEa7+V0XVtLjRh+nTbD9wmQ5SRmX+21Coj56eRjBz+wiNOd6ygPcbVueh1jk7zKbsM0Lr5cZi7p2xY4pK8rmyYGv5CpGjvoSRKbIjQvxYSEFnVEV4F2YcoDAPBNatv7nvbLFxufil2kiXUyC7XSk0T6A9GMbQ+ge2hUsqh9wTRvesAJGR9p8y9G1r9n2SYrwIxpzfw64PNpLHY46n+5tgqD0BOpC+VhsQOb53ex9OmdTgDWAIWBjhVQMNTERIy8PP363TFS3B4maJyuHlpOKQx/4O0fxs9bo+3B4GKeO4QO6O4MdPYXAAc8UYH0PrCixAN7cn+T/zhBt+8Rjdzyf/8DyMrpxE3wMkCgChG44yGEZoHTVmaFl6vlge86MIp1vhe6FciAX7HB4FU1/qmBJetEdyPMThrDQJbS83jtGK5c8E0zNqgbNt4yDimEzQN9f4n6P+fIupMLAAb2Rf3Hv5UvHhfkgJc="
     on:
       repo: $TRAVIS_REPO_SLUG
-      #tags: true
+      tags: true
       branch: master
     local-dir: doc/build/html
 

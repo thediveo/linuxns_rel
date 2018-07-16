@@ -1,16 +1,57 @@
+# Copyright 2018 Harald Albrecht
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License.
+
 """Introspection of Linux kernel namespace relationships, such as
 owning user namespace, parent namespace of a PID or user namespace,
 the owner's user ID of a namespace, and some more.
 
-See also ioctl-ns(2):
-http://man7.org/linux/man-pages/man2/ioctl_ns.2.html
+* PyPi: https://pypi.org/project/linuxns-rel/ ... install with
+  ``pip3 install linuxns-rel``
+* GitHub project: https://github.com/TheDiveO/linuxns_rel
+* ioctl-ns(2):
+  http://man7.org/linux/man-pages/man2/ioctl_ns.2.html
 
 CLI
 ---
 
-This library comes with two simple CLI tools: `lsuserns` and `lspidns`.
-These simply pretty-print the tree of Linux user (or PID) namespaces
-as can be discovered from the visible running processes.
+This library comes with two simple CLI tools: ``lsuserns`` and
+``lspidns``. These simply pretty-print the tree of Linux user (or
+PID) namespaces as can be discovered from the visible running
+processes.
+
+To add some spice to the output, first open some user namespaces in
+a separate terminal session (fails? see
+`how to enable user_namespaces in the kernel? for unprivileged "unshare"
+<https://unix.stackexchange.com/questions/303213/how-to-enable-user-namespaces-in-the-kernel-for-unprivileged-unshare>`_):
+
+.. code-block:: console
+
+    $ unshare -Ur unshare -Ur unshare -Ur unshare -Ur
+
+.. code-block:: console
+
+    $ lsuserns
+    user:[4026531837] owner root (0)
+     ├── user:[4026532466] owner foo (1000)
+     ├── user:[4026532636] owner foo (1000)
+     ├── user:[4026532635] owner foo (1000)
+     ├── user:[4026532916] owner foo (1000)
+     ├── user:[4026532693] owner foo (1000)
+     └── user:[4026532578] owner foo (1000)
+         └── user:[4026532634] owner foo (1000)
+             └── user:[4026532694] owner foo (1000)
+                 └── user:[4026532753] owner foo (1000)
 
 Both CLI tools are implemented in the same module
 :mod:`linuxns_rel.tools.lshierns`.
@@ -66,20 +107,6 @@ API
 ---
 """
 
-# Copyright 2018 Harald Albrecht
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# permissions and limitations under the License.
-
 
 import os
 from fcntl import ioctl
@@ -88,7 +115,7 @@ from typing import TextIO
 
 
 # library/package semantic version
-__version__ = '0.9.0'
+__version__ = '1.0.0'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also

@@ -2,6 +2,11 @@ language: python
 python:
   - "3.6"
 
+branches:
+  only:
+    - master
+    - /^\d+\.\d+\.\d+*$/
+
 install:
   - pip3 install -e .[dev]
 
@@ -11,13 +16,24 @@ script:
   # skip our tests.
   #- coverage run -m unittest discover
   #- coverage report
-  - echo "Skipping tests due to outdated Linux kernels"
+  - (cd doc && make html)
 
 deploy:
-  provider: pypi
-  distributions: "sdist bdist_wheel"
-  user: "thediveo"
-  password:
-    secure: "X+mVHPNYCorFqQCJtJooN1p3mRrQkcuD3lhEyWTg63S/ZE7zeECWeDVBFGV6WN56uhilvYow/gUHNSEjn/pk0//WU5FvWQnL1J0GENwTXycbKrtk9BEcLoLODAxRicHvQhwl/wrTfV02IRSvtAXz/jpO5WCDkBvPnKiEShMzFiSWFTdKw89Z18LhD7mXoqB3FG3QcB2Q+KaFuXc46RL0A8jbPliRtveS2PoNemEh+CY5ZxbF7U4ALn5yS9RfNnE9sz0EZGD3nfGCKINA72CVKJrgVySncnOZJuyYc2zqugKQZDrfl2aJ5bIVlMB40LOTXrtN5bbqs42bxPasC6KqodNCLn+8SSoMjeoipeq4U7YVE0lZIQgeYBSzXDkeMyYkqXBlIR5JGUq5BY7DdHGjFdGgzVm6J0BwdXVnhYWD5uKYLTnGE67u+TFPGMWXoSbZ8y3QSgJJ2E5LbP4Vz6tdvpYtIrAp6wdNJv8HnfZ82ND2kD53H2YAIwx8JfRseVXehpZyfVsplfjABYLSTayiMCrIhOwvJu1K/iQVkvpt6qwrDpUl7SqomrCTVv4MaRDEEhqfr0ZjKsZYpIaeyMFBJ01otMxXxTtJwjJa5tpNQrTdR5zh1LEL+rN2CMlfxfc9niuxQ4P3k+Z/dv1xsEDSQTwzN7mPoC9ndPWHn6Q/H60="
-  on:
-    tags: true
+  - provider: pages
+    skip_cleanup: true
+    keep-history: true
+    github-token:
+      secure: "fxkuKV1wM2cyEWO2Hv4BSZZoVaWDyb+3rN6bmPHVaRrr36Cg3YOG40tUuYRCtC2u6HxQG0mv2P1f2cAx+IH92OD1UN+XA9m7hlADjLELjqwU++hBMy070woL7NuulAmCR2monW6qSVStQDFyoi4M4WtocLQfhLpyxidfA0sCENpkvJqWpTx8tu5yMsQyW0DgQTsdWr8bZri41AEa7+V0XVtLjRh+nTbD9wmQ5SRmX+21Coj56eRjBz+wiNOd6ygPcbVueh1jk7zKbsM0Lr5cZi7p2xY4pK8rmyYGv5CpGjvoSRKbIjQvxYSEFnVEV4F2YcoDAPBNatv7nvbLFxufil2kiXUyC7XSk0T6A9GMbQ+ge2hUsqh9wTRvesAJGR9p8y9G1r9n2SYrwIxpzfw64PNpLHY46n+5tgqD0BOpC+VhsQOb53ex9OmdTgDWAIWBjhVQMNTERIy8PP363TFS3B4maJyuHlpOKQx/4O0fxs9bo+3B4GKeO4QO6O4MdPYXAAc8UYH0PrCixAN7cn+T/zhBt+8Rjdzyf/8DyMrpxE3wMkCgChG44yGEZoHTVmaFl6vlge86MIp1vhe6FciAX7HB4FU1/qmBJetEdyPMThrDQJbS83jtGK5c8E0zNqgbNt4yDimEzQN9f4n6P+fIupMLAAb2Rf3Hv5UvHhfkgJc="
+    on:
+      repo: $TRAVIS_REPO_SLUG
+      tags: true
+      branch: master
+    local-dir: doc/build/html
+
+  - provider: pypi
+    distributions: "sdist bdist_wheel"
+    user: "thediveo"
+    password:
+      secure: "X+mVHPNYCorFqQCJtJooN1p3mRrQkcuD3lhEyWTg63S/ZE7zeECWeDVBFGV6WN56uhilvYow/gUHNSEjn/pk0//WU5FvWQnL1J0GENwTXycbKrtk9BEcLoLODAxRicHvQhwl/wrTfV02IRSvtAXz/jpO5WCDkBvPnKiEShMzFiSWFTdKw89Z18LhD7mXoqB3FG3QcB2Q+KaFuXc46RL0A8jbPliRtveS2PoNemEh+CY5ZxbF7U4ALn5yS9RfNnE9sz0EZGD3nfGCKINA72CVKJrgVySncnOZJuyYc2zqugKQZDrfl2aJ5bIVlMB40LOTXrtN5bbqs42bxPasC6KqodNCLn+8SSoMjeoipeq4U7YVE0lZIQgeYBSzXDkeMyYkqXBlIR5JGUq5BY7DdHGjFdGgzVm6J0BwdXVnhYWD5uKYLTnGE67u+TFPGMWXoSbZ8y3QSgJJ2E5LbP4Vz6tdvpYtIrAp6wdNJv8HnfZ82ND2kD53H2YAIwx8JfRseVXehpZyfVsplfjABYLSTayiMCrIhOwvJu1K/iQVkvpt6qwrDpUl7SqomrCTVv4MaRDEEhqfr0ZjKsZYpIaeyMFBJ01otMxXxTtJwjJa5tpNQrTdR5zh1LEL+rN2CMlfxfc9niuxQ4P3k+Z/dv1xsEDSQTwzN7mPoC9ndPWHn6Q/H60="
+    on:
+      tags: true

@@ -1,7 +1,27 @@
-"""Introspection of Linux kernel namespace relationships.
+"""Introspection of Linux kernel namespace relationships, such as
+owning user namespace, parent namespace of a PID or user namespace,
+the owner's user ID of a namespace, and some more.
 
 See also ioctl-ns(2):
 http://man7.org/linux/man-pages/man2/ioctl_ns.2.html
+
+Usage
+-----
+
+Simply import the `linuxns_rel` package to discover Linux kernel
+namespace relationships in Python.
+
+>>> import linuxns_rel
+
+Let's get the owner user namespace of your Python script, and then
+print the user name of this owner.
+
+>>> from pwd import getpwuid
+>>> with linuxns_rel.get_userns('/proc/self/ns/net') as owner_ns:
+...     owner_uid = linuxns_rel.get_owner_uid(owner_ns)
+...     print('owning user:', getpwuid(owner_uid).pw_name)
+owning user: root
+
 """
 
 # Copyright 2018 Harald Albrecht
@@ -117,6 +137,25 @@ NAMESPACE_TYPE_NAMES = {
 
 
 def nstype_str(nstype: int) -> str:
+    """Returns the type name for a certain namespace type. Typically,
+    this function is used in  the context of :func:`get_nstype`, where
+    all you got is a file, but not a path to (incorrectly) guess the
+    type name of namespace from.
+
+    >>> import linuxns_rel
+    >>> print(linuxns_rel.nstype_str(
+    ...     linuxns_rel.get_nstype(
+    ...         '/proc/self/ns/net')))
+    net
+
+    So, what type of namespace does :func:`get_userns` return? As you
+    might already guess: a user namespace.
+
+    >>> print(linuxns_rel.nstype_str(
+    ...     linuxns_rel.get_nstype(
+    ...         linuxns_rel.get_userns('/proc/self/ns/net'))))
+    user
+    """
     if nstype in NAMESPACE_TYPE_NAMES:
         return NAMESPACE_TYPE_NAMES[nstype]
     raise ValueError('invalid namespace type value {i}/{h}'.format(

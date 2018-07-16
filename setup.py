@@ -42,7 +42,9 @@ setup(
     ],
     extras_require={
         'dev': [
-            'coverage'
+            'coverage',
+            'sphinx',
+            'sphinx_rtd_theme'
         ]
     }
 )

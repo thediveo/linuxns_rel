@@ -2,5 +2,8 @@
 .dist/
 .idea/
 *.egg-info/
-venv/
 htmlcov/
+venv/
+doc/build/
+doc/source/_static/
+*.pyc

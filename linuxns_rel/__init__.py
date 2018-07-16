@@ -5,11 +5,22 @@ the owner's user ID of a namespace, and some more.
 See also ioctl-ns(2):
 http://man7.org/linux/man-pages/man2/ioctl_ns.2.html
 
-Usage
------
+CLI
+---
 
-Simply import the `linuxns_rel` package to discover Linux kernel
-namespace relationships in Python.
+This library comes with two simple CLI tools: `lsuserns` and `lspidns`.
+These simply pretty-print the tree of Linux user (or PID) namespaces
+as can be discovered from the visible running processes.
+
+Both CLI tools are implemented in the same module
+:mod:`linuxns_rel.tools.lshierns`.
+
+Examples
+--------
+
+Without much ado, let's try some examples. Simply import the
+:mod:`linuxns_rel` package to discover Linux kernel namespace
+relationships in Python.
 
 >>> import linuxns_rel
 
@@ -22,6 +33,37 @@ print the user name of this owner.
 ...     print('owning user:', getpwuid(owner_uid).pw_name)
 owning user: root
 
+Let's get the parent user namespace of the user namespace our Python
+interpreter runs in.
+
+>>> with linuxns_rel.get_parentns('/proc/self/ns/user') as parent_userns:
+...     pass
+Traceback (most recent call last):
+  ...
+PermissionError: [Errno 1] Operation not permitted
+
+Now, here's the caveat: when we run this inside either the so-called
+"root" user namespace so that there's no parent, or we don't have the
+privileges to learn the parent, then Linux will in both cases return
+an error, wrapped in a Python :exc:`PermissionError`.
+
+All functions expecting a namespace reference, either accept:
+
+* a string that represents a filesystem path, such as
+  '/proc/self/ns/user'.
+* a TextIO object, as returned by :func:`open` or some of the namespace
+  relation functions, namely :func:`get_userns` and
+  :func:`get_parentns`.
+* a file descriptor or file number, such as returned by :func:`fileno`.
+
+Please note that there is no way to get a filesystem path name returned
+by :func:`get_userns` and :func:`get_parentns`: as Linux kernel
+namespaces might even not be referenced in the filesystem and due to
+the way \*nix filesystems work in general, there is no way to get back
+a filesystem path name from an open file.
+
+API
+---
 """
 
 # Copyright 2018 Harald Albrecht
@@ -53,12 +95,19 @@ __version__ = '0.9.0'
 # setns(), unshare(), and the NS_GET_NSTYPE ioctl().
 #
 # https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/sched.h
+#: mount namespace type constant.
 CLONE_NEWNS = 0x00020000
+#: cgroup namespace type constant.
 CLONE_NEWCGROUP = 0x02000000
+#: uts (that is, \*nix timesharing system) namespace type constant.
 CLONE_NEWUTS = 0x04000000
+#: inter-process communication namespace type constant.
 CLONE_NEWIPC = 0x08000000
+#: user namespace type constant.
 CLONE_NEWUSER = 0x10000000
+#: PID namespace type constant.
 CLONE_NEWPID = 0x20000000
+#: network namespace type constant.
 CLONE_NEWNET = 0x40000000
 
 # Attention: the following definitions hold only for the "asm-generic"
@@ -143,18 +192,17 @@ def nstype_str(nstype: int) -> str:
     type name of namespace from.
 
     >>> import linuxns_rel
-    >>> print(linuxns_rel.nstype_str(
-    ...     linuxns_rel.get_nstype(
-    ...         '/proc/self/ns/net')))
-    net
+    >>> linuxns_rel.nstype_str(
+    ...     linuxns_rel.get_nstype('/proc/self/ns/net'))
+    'net'
 
     So, what type of namespace does :func:`get_userns` return? As you
-    might already guess: a user namespace.
+    might already guess: a user namespace. But let's check that:
 
-    >>> print(linuxns_rel.nstype_str(
+    >>> linuxns_rel.nstype_str(
     ...     linuxns_rel.get_nstype(
-    ...         linuxns_rel.get_userns('/proc/self/ns/net'))))
-    user
+    ...         linuxns_rel.get_userns('/proc/self/ns/net')))
+    'user'
     """
     if nstype in NAMESPACE_TYPE_NAMES:
         return NAMESPACE_TYPE_NAMES[nstype]
@@ -164,7 +212,24 @@ def nstype_str(nstype: int) -> str:
 
 def get_nstype(nsref: [str, TextIO, int]) -> int:
     """Returns the type of namespace. The namespace can be referenced
-    either via an open file, file descriptor, or path string."""
+    either via an open file, file descriptor, or path string.
+
+    The type returned is one of: :const:`CLONE_NEWNS`,
+    :const:`CLONE_NEWCGROUP`, :const:`CLONE_NEWUTS`,
+    :const:`CLONE_NEWIPC`, :const:`CLONE_NEWUSER`,
+    :const:`CLONE_NEWPID`, :const:`CLONE_NEWNET`.
+
+    >>> import linuxns_rel
+    >>> linuxns_rel.get_nstype('/proc/self/ns/net') == linuxns_rel.CLONE_NEWNET
+    True
+
+    If you already have an open file referencing a Linux namespace, then
+    you might use that directly:
+
+    >>> with open('/proc/self/ns/net') as netns_f:
+    ...     linuxns_rel.get_nstype(netns_f) == linuxns_rel.CLONE_NEWNET
+    True
+    """
     if isinstance(nsref, str):
         with open(nsref) as f:
             return ioctl(f.fileno(), NS_GET_NSTYPE)
@@ -199,14 +264,66 @@ def get_userns(nsref: [str, TextIO, int]) -> TextIO:
     """Returns the user namespace owning a namespace, in form of a
     file object referencing the owning user namespace. The owned
     namespace parameter can be either an open file, file descriptor, or
-    path string."""
+    path string.
+
+    So let's get the owning user namespace of the PID namespace that
+    our Python interpreter is using, and print it's user ID. It will be
+    root (unless you are running this inside a sandbox which uses
+    a different owning user namespace).
+
+    >>> import linuxns_rel
+    >>> with linuxns_rel.get_userns('/proc/self/ns/pid') as owning_userns_f:
+    ...     linuxns_rel.get_owner_uid(owning_userns_f)
+    0
+
+    Please note that the owning user namespace of a user namespace is
+    its parent user namespace, so :func:`get_userns` and
+    :func:`get_parentns` are synonymous in this case.
+    """
     return get_nsrel(nsref, NS_GET_USERNS)
 
 
 def get_parentns(nsref: [str, TextIO, int]) -> TextIO:
     """Returns the parent namespace of a namespace, in form of a
     file object. The namespace parameter can be either an open file,
-    file descriptor, or path string."""
+    file descriptor, or path string.
+
+    You can then use the returned file object for further namespace
+    operations, such as iterative calls to :func:`get_parentns`,
+    specifying each time the file object returned by the previous call.
+
+    However, it is **impossible** to retrieve a filesystem path,
+    because Linux kernel namespaces might even not appear in the
+    filesystem at all (such as "hidden" user namespaces without
+    processes).
+
+    At this time, only two out of the implemented Linux kernel
+    namespaces are hierarchical: the PID and user namespaces. All other
+    namespaces are flat, despite what you first might have expected.
+    In the case of user namespaces, the parent of a user namespace is
+    the same as the owning user namespace of a user namespace.
+
+    In case you've reached the top of the hierarchical namespaces (at
+    least from your point of view), then you'll get a
+    :exc:`PermissionError`. This also happens when you have
+    insufficient rights to further go up a namespace hierarchy.
+
+    >>> import linuxns_rel
+    >>> with linuxns_rel.get_parentns('/proc/self/ns/user') as parent_owner_f:
+    ...     pass
+    Traceback (most recent call last):
+      ...
+    PermissionError: [Errno 1] Operation not permitted
+
+    When you ask for the parent namespace of a _flat_ namespace, you'll
+    get an :exc:`OSError` instead:
+
+    >>> with linuxns_rel.get_parentns('/proc/self/ns/uts') as parent_owner_f:
+    ...     pass
+    Traceback (most recent call last):
+      ...
+    OSError: [Errno 22] Invalid argument
+    """
     return get_nsrel(nsref, NS_GET_PARENT)
 
 
@@ -214,7 +331,12 @@ def get_owner_uid(usernsref: [str, TextIO, int]) -> int:
     """Returns the user ID of the owner of a user namespace, that is,
     the user ID of the process that created the user namespace. The
     user namespace parameter can be either an open file, file
-    descriptor, or path string."""
+    descriptor, or path string.
+
+    >>> import linuxns_rel
+    >>> linuxns_rel.get_owner_uid('/proc/self/ns/user')
+    0
+    """
     # Ensure to catch most silent errors by initializing the user ID
     # return value with "MAXINT".
     uid = struct.pack('I', 2**32-42)

@@ -1,10 +1,5 @@
-.. linuxns-rel documentation master file, created by
-   sphinx-quickstart on Mon Jul 16 12:26:15 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to linuxns-rel's documentation!
-=======================================
+Linux Namespace Relations in Python
+===================================
 
 .. toctree::
    :maxdepth: 2
@@ -12,6 +7,7 @@ Welcome to linuxns-rel's documentation!
 
 .. automodule:: linuxns_rel
    :members:
+   :exclude-members: get_nsrel
 
 Indices and tables
 ==================

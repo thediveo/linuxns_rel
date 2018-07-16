@@ -1,0 +1,556 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>linuxns_rel &mdash; linuxns-rel 0.9.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> linuxns-rel
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">linuxns-rel</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>linuxns_rel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for linuxns_rel</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Introspection of Linux kernel namespace relationships, such as</span>
+<span class="sd">owning user namespace, parent namespace of a PID or user namespace,</span>
+<span class="sd">the owner&#39;s user ID of a namespace, and some more.</span>
+
+<span class="sd">See also ioctl-ns(2):</span>
+<span class="sd">http://man7.org/linux/man-pages/man2/ioctl_ns.2.html</span>
+
+<span class="sd">CLI</span>
+<span class="sd">---</span>
+
+<span class="sd">This library comes with two simple CLI tools: `lsuserns` and `lspidns`.</span>
+<span class="sd">These simply pretty-print the tree of Linux user (or PID) namespaces</span>
+<span class="sd">as can be discovered from the visible running processes.</span>
+
+<span class="sd">Both CLI tools are implemented in the same module</span>
+<span class="sd">:mod:`linuxns_rel.tools.lshierns`.</span>
+
+<span class="sd">Examples</span>
+<span class="sd">--------</span>
+
+<span class="sd">Without much ado, let&#39;s try some examples. Simply import the</span>
+<span class="sd">:mod:`linuxns_rel` package to discover Linux kernel namespace</span>
+<span class="sd">relationships in Python.</span>
+
+<span class="sd">&gt;&gt;&gt; import linuxns_rel</span>
+
+<span class="sd">Let&#39;s get the owner user namespace of your Python script, and then</span>
+<span class="sd">print the user name of this owner.</span>
+
+<span class="sd">&gt;&gt;&gt; from pwd import getpwuid</span>
+<span class="sd">&gt;&gt;&gt; with linuxns_rel.get_userns(&#39;/proc/self/ns/net&#39;) as owner_ns:</span>
+<span class="sd">...     owner_uid = linuxns_rel.get_owner_uid(owner_ns)</span>
+<span class="sd">...     print(&#39;owning user:&#39;, getpwuid(owner_uid).pw_name)</span>
+<span class="sd">owning user: root</span>
+
+<span class="sd">Let&#39;s get the parent user namespace of the user namespace our Python</span>
+<span class="sd">interpreter runs in.</span>
+
+<span class="sd">&gt;&gt;&gt; with linuxns_rel.get_parentns(&#39;/proc/self/ns/user&#39;) as parent_userns:</span>
+<span class="sd">...     pass</span>
+<span class="sd">Traceback (most recent call last):</span>
+<span class="sd">  ...</span>
+<span class="sd">PermissionError: [Errno 1] Operation not permitted</span>
+
+<span class="sd">Now, here&#39;s the caveat: when we run this inside either the so-called</span>
+<span class="sd">&quot;root&quot; user namespace so that there&#39;s no parent, or we don&#39;t have the</span>
+<span class="sd">privileges to learn the parent, then Linux will in both cases return</span>
+<span class="sd">an error, wrapped in a Python :exc:`PermissionError`.</span>
+
+<span class="sd">All functions expecting a namespace reference, either accept:</span>
+
+<span class="sd">* a string that represents a filesystem path, such as</span>
+<span class="sd">  &#39;/proc/self/ns/user&#39;.</span>
+<span class="sd">* a TextIO object, as returned by :func:`open` or some of the namespace</span>
+<span class="sd">  relation functions, namely :func:`get_userns` and</span>
+<span class="sd">  :func:`get_parentns`.</span>
+<span class="sd">* a file descriptor or file number, such as returned by :func:`fileno`.</span>
+
+<span class="sd">Please note that there is no way to get a filesystem path name returned</span>
+<span class="sd">by :func:`get_userns` and :func:`get_parentns`: as Linux kernel</span>
+<span class="sd">namespaces might even not be referenced in the filesystem and due to</span>
+<span class="sd">the way \*nix filesystems work in general, there is no way to get back</span>
+<span class="sd">a filesystem path name from an open file.</span>
+
+<span class="sd">API</span>
+<span class="sd">---</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># Copyright 2018 Harald Albrecht</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or</span>
+<span class="c1"># implied. See the License for the specific language governing</span>
+<span class="c1"># permissions and limitations under the License.</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">fcntl</span> <span class="k">import</span> <span class="n">ioctl</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">TextIO</span>
+
+
+<span class="c1"># library/package semantic version</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;0.9.0&#39;</span>
+
+<span class="c1"># Linux namespace type constants; these are used with several of the</span>
+<span class="c1"># namespace related functions, such as clone() in particular, but also</span>
+<span class="c1"># setns(), unshare(), and the NS_GET_NSTYPE ioctl().</span>
+<span class="c1">#</span>
+<span class="c1"># https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/sched.h</span>
+<span class="c1">#: mount namespace type constant.</span>
+<span class="n">CLONE_NEWNS</span> <span class="o">=</span> <span class="mh">0x00020000</span>
+<span class="c1">#: cgroup namespace type constant.</span>
+<span class="n">CLONE_NEWCGROUP</span> <span class="o">=</span> <span class="mh">0x02000000</span>
+<span class="c1">#: uts (that is, \*nix timesharing system) namespace type constant.</span>
+<span class="n">CLONE_NEWUTS</span> <span class="o">=</span> <span class="mh">0x04000000</span>
+<span class="c1">#: inter-process communication namespace type constant.</span>
+<span class="n">CLONE_NEWIPC</span> <span class="o">=</span> <span class="mh">0x08000000</span>
+<span class="c1">#: user namespace type constant.</span>
+<span class="n">CLONE_NEWUSER</span> <span class="o">=</span> <span class="mh">0x10000000</span>
+<span class="c1">#: PID namespace type constant.</span>
+<span class="n">CLONE_NEWPID</span> <span class="o">=</span> <span class="mh">0x20000000</span>
+<span class="c1">#: network namespace type constant.</span>
+<span class="n">CLONE_NEWNET</span> <span class="o">=</span> <span class="mh">0x40000000</span>
+
+<span class="c1"># Attention: the following definitions hold only for the &quot;asm-generic&quot;</span>
+<span class="c1"># platforms, such as x86, arm, and others. Currently the only platforms</span>
+<span class="c1"># having a different ioctl request field mapping are: alpha, mips,</span>
+<span class="c1"># powerpc, and sparc.</span>
+<span class="c1">#</span>
+<span class="c1"># https://elixir.bootlin.com/linux/latest/source/include/uapi/asm-generic/ioctl.h</span>
+<span class="n">_IOC_NRBITS</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">_IOC_TYPEBITS</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">_IOC_SIZEBITS</span> <span class="o">=</span> <span class="mi">14</span>
+<span class="n">_IOC_DIRBITS</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">_IOC_NRSHIFT</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">_IOC_TYPESHIFT</span> <span class="o">=</span> <span class="n">_IOC_NRSHIFT</span><span class="o">+</span><span class="n">_IOC_NRBITS</span>
+<span class="n">_IOC_SIZESHIFT</span> <span class="o">=</span> <span class="n">_IOC_TYPESHIFT</span><span class="o">+</span><span class="n">_IOC_TYPEBITS</span>
+<span class="n">_IOC_DIRSHIFT</span> <span class="o">=</span> <span class="n">_IOC_SIZESHIFT</span><span class="o">+</span><span class="n">_IOC_SIZEBITS</span>
+
+<span class="n">_IOC_NONE</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">_IOC_WRITE</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_IOC_READ</span> <span class="o">=</span> <span class="mi">2</span>
+
+
+<span class="c1"># noinspection PyShadowingBuiltins,PyPep8Naming</span>
+<span class="k">def</span> <span class="nf">_IOC</span><span class="p">(</span><span class="nb">dir</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns an ioctl() request value, calculated for a specific ioctl</span>
+<span class="sd">    call properties of parameter direction in/out, parameter size,</span>
+<span class="sd">    type of ioctl, and command number.</span>
+
+<span class="sd">    :param dir: direction of parameter, either `_IOC_NONE`, `_IOC_READ`,</span>
+<span class="sd">      or `_IOC_WRITE`.</span>
+<span class="sd">    :param type: ioctl command &quot;type&quot;; this is basically for grouping</span>
+<span class="sd">      individual commands into groups, such as `NSIO` for</span>
+<span class="sd">      namespace-related ioctl()s.</span>
+<span class="sd">    :param nr: individual command inside the `type` group.</span>
+<span class="sd">    :param size: size of parameter in bytes, from 0 to 2**14-1.</span>
+<span class="sd">    :return: ioctl request number.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">((</span><span class="nb">dir</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_DIRSHIFT</span><span class="p">)</span> <span class="o">|</span>
+            <span class="p">(</span><span class="nb">type</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_TYPESHIFT</span><span class="p">)</span> <span class="o">|</span>
+            <span class="p">(</span><span class="n">nr</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_NRSHIFT</span><span class="p">)</span> <span class="o">|</span>
+            <span class="p">(</span><span class="n">size</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_SIZESHIFT</span><span class="p">))</span>
+
+
+<span class="c1"># noinspection PyShadowingBuiltins,PyPep8Naming</span>
+<span class="k">def</span> <span class="nf">_IO</span><span class="p">(</span><span class="nb">type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_IOC</span><span class="p">(</span><span class="n">_IOC_NONE</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">nr</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<span class="c1"># https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/nsfs.h</span>
+<span class="n">NSIO</span> <span class="o">=</span> <span class="mh">0xb7</span>
+
+<span class="c1"># Returns a file descriptor that refers to an owning user namespace</span>
+<span class="n">NS_GET_USERNS</span> <span class="o">=</span> <span class="n">_IO</span><span class="p">(</span><span class="n">NSIO</span><span class="p">,</span> <span class="mh">0x1</span><span class="p">)</span>
+<span class="c1"># Returns a file descriptor that refers to a parent namespace</span>
+<span class="n">NS_GET_PARENT</span> <span class="o">=</span> <span class="n">_IO</span><span class="p">(</span><span class="n">NSIO</span><span class="p">,</span> <span class="mh">0x2</span><span class="p">)</span>
+<span class="c1"># Returns the type of namespace CLONE_NEW* value referred to by a file</span>
+<span class="c1"># descriptor</span>
+<span class="n">NS_GET_NSTYPE</span> <span class="o">=</span> <span class="n">_IO</span><span class="p">(</span><span class="n">NSIO</span><span class="p">,</span> <span class="mh">0x3</span><span class="p">)</span>
+<span class="c1"># Get owner UID (in the caller&#39;s user namespace) for a user namespace</span>
+<span class="n">NS_GET_OWNER_UID</span> <span class="o">=</span> <span class="n">_IO</span><span class="p">(</span><span class="n">NSIO</span><span class="p">,</span> <span class="mh">0x4</span><span class="p">)</span>
+
+
+<span class="c1"># Dictionary mapping Linux namespace type constants to plain names.</span>
+<span class="c1"># These are the same plain names as used by Linux namespace CLI tools,</span>
+<span class="c1"># such as lsns(8).</span>
+<span class="n">NAMESPACE_TYPE_NAMES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">CLONE_NEWNS</span><span class="p">:</span> <span class="s1">&#39;mnt&#39;</span><span class="p">,</span>
+    <span class="n">CLONE_NEWCGROUP</span><span class="p">:</span> <span class="s1">&#39;cgroup&#39;</span><span class="p">,</span>
+    <span class="n">CLONE_NEWUTS</span><span class="p">:</span> <span class="s1">&#39;uts&#39;</span><span class="p">,</span>
+    <span class="n">CLONE_NEWIPC</span><span class="p">:</span> <span class="s1">&#39;ipc&#39;</span><span class="p">,</span>
+    <span class="n">CLONE_NEWUSER</span><span class="p">:</span> <span class="s1">&#39;user&#39;</span><span class="p">,</span>
+    <span class="n">CLONE_NEWPID</span><span class="p">:</span> <span class="s1">&#39;pid&#39;</span><span class="p">,</span>
+    <span class="n">CLONE_NEWNET</span><span class="p">:</span> <span class="s1">&#39;net&#39;</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="nstype_str"><a class="viewcode-back" href="../index.html#linuxns_rel.nstype_str">[docs]</a><span class="k">def</span> <span class="nf">nstype_str</span><span class="p">(</span><span class="n">nstype</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the type name for a certain namespace type. Typically,</span>
+<span class="sd">    this function is used in  the context of :func:`get_nstype`, where</span>
+<span class="sd">    all you got is a file, but not a path to (incorrectly) guess the</span>
+<span class="sd">    type name of namespace from.</span>
+
+<span class="sd">    &gt;&gt;&gt; import linuxns_rel</span>
+<span class="sd">    &gt;&gt;&gt; linuxns_rel.nstype_str(</span>
+<span class="sd">    ...     linuxns_rel.get_nstype(&#39;/proc/self/ns/net&#39;))</span>
+<span class="sd">    &#39;net&#39;</span>
+
+<span class="sd">    So, what type of namespace does :func:`get_userns` return? As you</span>
+<span class="sd">    might already guess: a user namespace. But let&#39;s check that:</span>
+
+<span class="sd">    &gt;&gt;&gt; linuxns_rel.nstype_str(</span>
+<span class="sd">    ...     linuxns_rel.get_nstype(</span>
+<span class="sd">    ...         linuxns_rel.get_userns(&#39;/proc/self/ns/net&#39;)))</span>
+<span class="sd">    &#39;user&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">nstype</span> <span class="ow">in</span> <span class="n">NAMESPACE_TYPE_NAMES</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">NAMESPACE_TYPE_NAMES</span><span class="p">[</span><span class="n">nstype</span><span class="p">]</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;invalid namespace type value </span><span class="si">{i}</span><span class="s1">/</span><span class="si">{h}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">nstype</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="nb">hex</span><span class="p">(</span><span class="n">nstype</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="get_nstype"><a class="viewcode-back" href="../index.html#linuxns_rel.get_nstype">[docs]</a><span class="k">def</span> <span class="nf">get_nstype</span><span class="p">(</span><span class="n">nsref</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the type of namespace. The namespace can be referenced</span>
+<span class="sd">    either via an open file, file descriptor, or path string.</span>
+
+<span class="sd">    The type returned is one of: :const:`CLONE_NEWNS`,</span>
+<span class="sd">    :const:`CLONE_NEWCGROUP`, :const:`CLONE_NEWUTS`,</span>
+<span class="sd">    :const:`CLONE_NEWIPC`, :const:`CLONE_NEWUSER`,</span>
+<span class="sd">    :const:`CLONE_NEWPID`, :const:`CLONE_NEWNET`.</span>
+
+<span class="sd">    &gt;&gt;&gt; import linuxns_rel</span>
+<span class="sd">    &gt;&gt;&gt; linuxns_rel.get_nstype(&#39;/proc/self/ns/net&#39;) == linuxns_rel.CLONE_NEWNET</span>
+<span class="sd">    True</span>
+
+<span class="sd">    If you already have an open file referencing a Linux namespace, then</span>
+<span class="sd">    you might use that directly:</span>
+
+<span class="sd">    &gt;&gt;&gt; with open(&#39;/proc/self/ns/net&#39;) as netns_f:</span>
+<span class="sd">    ...     linuxns_rel.get_nstype(netns_f) == linuxns_rel.CLONE_NEWNET</span>
+<span class="sd">    True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">nsref</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">NS_GET_NSTYPE</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="s1">&#39;fileno&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">nsref</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">NS_GET_NSTYPE</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="n">NS_GET_NSTYPE</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;namespace reference must be str, int or &#39;</span>
+                        <span class="s1">&#39;TextIO, not </span><span class="si">{t}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">nsref</span><span class="p">)))</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_nsrel</span><span class="p">(</span><span class="n">nsref</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">request</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TextIO</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns a new namespace reference that is related to a namespace</span>
+<span class="sd">    in the way specified by the `request` parameter. The namespace</span>
+<span class="sd">    parameter can be either an open file, file descriptor, or path</span>
+<span class="sd">    string.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">nsref</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">userns</span> <span class="o">=</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="s1">&#39;fileno&#39;</span><span class="p">):</span>
+        <span class="n">userns</span> <span class="o">=</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">nsref</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">userns</span> <span class="o">=</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;namespace reference must be str, int or &#39;</span>
+                        <span class="s1">&#39;TextIO, not </span><span class="si">{t}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">nsref</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">userns</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_userns"><a class="viewcode-back" href="../index.html#linuxns_rel.get_userns">[docs]</a><span class="k">def</span> <span class="nf">get_userns</span><span class="p">(</span><span class="n">nsref</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TextIO</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the user namespace owning a namespace, in form of a</span>
+<span class="sd">    file object referencing the owning user namespace. The owned</span>
+<span class="sd">    namespace parameter can be either an open file, file descriptor, or</span>
+<span class="sd">    path string.</span>
+
+<span class="sd">    So let&#39;s get the owning user namespace of the PID namespace that</span>
+<span class="sd">    our Python interpreter is using, and print it&#39;s user ID. It will be</span>
+<span class="sd">    root (unless you are running this inside a sandbox which uses</span>
+<span class="sd">    a different owning user namespace).</span>
+
+<span class="sd">    &gt;&gt;&gt; import linuxns_rel</span>
+<span class="sd">    &gt;&gt;&gt; with linuxns_rel.get_userns(&#39;/proc/self/ns/pid&#39;) as owning_userns_f:</span>
+<span class="sd">    ...     linuxns_rel.get_owner_uid(owning_userns_f)</span>
+<span class="sd">    0</span>
+
+<span class="sd">    Please note that the owning user namespace of a user namespace is</span>
+<span class="sd">    its parent user namespace, so :func:`get_userns` and</span>
+<span class="sd">    :func:`get_parentns` are synonymous in this case.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_nsrel</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="n">NS_GET_USERNS</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_parentns"><a class="viewcode-back" href="../index.html#linuxns_rel.get_parentns">[docs]</a><span class="k">def</span> <span class="nf">get_parentns</span><span class="p">(</span><span class="n">nsref</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TextIO</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the parent namespace of a namespace, in form of a</span>
+<span class="sd">    file object. The namespace parameter can be either an open file,</span>
+<span class="sd">    file descriptor, or path string.</span>
+
+<span class="sd">    You can then use the returned file object for further namespace</span>
+<span class="sd">    operations, such as iterative calls to :func:`get_parentns`,</span>
+<span class="sd">    specifying each time the file object returned by the previous call.</span>
+
+<span class="sd">    However, it is **impossible** to retrieve a filesystem path,</span>
+<span class="sd">    because Linux kernel namespaces might even not appear in the</span>
+<span class="sd">    filesystem at all (such as &quot;hidden&quot; user namespaces without</span>
+<span class="sd">    processes).</span>
+
+<span class="sd">    At this time, only two out of the implemented Linux kernel</span>
+<span class="sd">    namespaces are hierarchical: the PID and user namespaces. All other</span>
+<span class="sd">    namespaces are flat, despite what you first might have expected.</span>
+<span class="sd">    In the case of user namespaces, the parent of a user namespace is</span>
+<span class="sd">    the same as the owning user namespace of a user namespace.</span>
+
+<span class="sd">    In case you&#39;ve reached the top of the hierarchical namespaces (at</span>
+<span class="sd">    least from your point of view), then you&#39;ll get a</span>
+<span class="sd">    :exc:`PermissionError`. This also happens when you have</span>
+<span class="sd">    insufficient rights to further go up a namespace hierarchy.</span>
+
+<span class="sd">    &gt;&gt;&gt; import linuxns_rel</span>
+<span class="sd">    &gt;&gt;&gt; with linuxns_rel.get_parentns(&#39;/proc/self/ns/user&#39;) as parent_owner_f:</span>
+<span class="sd">    ...     pass</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">      ...</span>
+<span class="sd">    PermissionError: [Errno 1] Operation not permitted</span>
+
+<span class="sd">    When you ask for the parent namespace of a _flat_ namespace, you&#39;ll</span>
+<span class="sd">    get an :exc:`OSError` instead:</span>
+
+<span class="sd">    &gt;&gt;&gt; with linuxns_rel.get_parentns(&#39;/proc/self/ns/uts&#39;) as parent_owner_f:</span>
+<span class="sd">    ...     pass</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">      ...</span>
+<span class="sd">    OSError: [Errno 22] Invalid argument</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_nsrel</span><span class="p">(</span><span class="n">nsref</span><span class="p">,</span> <span class="n">NS_GET_PARENT</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_owner_uid"><a class="viewcode-back" href="../index.html#linuxns_rel.get_owner_uid">[docs]</a><span class="k">def</span> <span class="nf">get_owner_uid</span><span class="p">(</span><span class="n">usernsref</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the user ID of the owner of a user namespace, that is,</span>
+<span class="sd">    the user ID of the process that created the user namespace. The</span>
+<span class="sd">    user namespace parameter can be either an open file, file</span>
+<span class="sd">    descriptor, or path string.</span>
+
+<span class="sd">    &gt;&gt;&gt; import linuxns_rel</span>
+<span class="sd">    &gt;&gt;&gt; linuxns_rel.get_owner_uid(&#39;/proc/self/ns/user&#39;)</span>
+<span class="sd">    0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Ensure to catch most silent errors by initializing the user ID</span>
+    <span class="c1"># return value with &quot;MAXINT&quot;.</span>
+    <span class="n">uid</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="o">-</span><span class="mi">42</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">usernsref</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">usernsref</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">uid</span> <span class="o">=</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">NS_GET_OWNER_UID</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">usernsref</span><span class="p">,</span> <span class="s1">&#39;fileno&#39;</span><span class="p">):</span>
+        <span class="n">uid</span> <span class="o">=</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">usernsref</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">NS_GET_OWNER_UID</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">usernsref</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">uid</span> <span class="o">=</span> <span class="n">ioctl</span><span class="p">(</span><span class="n">usernsref</span><span class="p">,</span> <span class="n">NS_GET_OWNER_UID</span><span class="p">,</span> <span class="n">uid</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;namespace reference must be str, int or &#39;</span>
+                        <span class="s1">&#39;TextIO, not </span><span class="si">{t}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">usernsref</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">uid</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Harald Albrecht.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.9.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

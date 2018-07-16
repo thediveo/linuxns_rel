@@ -1,0 +1,452 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 0.9.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="#" class="icon icon-home"> linuxns-rel
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Linux Namespace Relations in Python</a><ul>
+<li><a class="reference internal" href="#cli">CLI</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">linuxns-rel</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Linux Namespace Relations in Python</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="linux-namespace-relations-in-python">
+<h1>Linux Namespace Relations in Python<a class="headerlink" href="#linux-namespace-relations-in-python" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<span class="target" id="module-linuxns_rel"></span><p>Introspection of Linux kernel namespace relationships, such as
+owning user namespace, parent namespace of a PID or user namespace,
+the owner’s user ID of a namespace, and some more.</p>
+<p>See also ioctl-ns(2):
+<a class="reference external" href="http://man7.org/linux/man-pages/man2/ioctl_ns.2.html">http://man7.org/linux/man-pages/man2/ioctl_ns.2.html</a></p>
+<div class="section" id="cli">
+<h2>CLI<a class="headerlink" href="#cli" title="Permalink to this headline">¶</a></h2>
+<p>This library comes with two simple CLI tools: <cite>lsuserns</cite> and <cite>lspidns</cite>.
+These simply pretty-print the tree of Linux user (or PID) namespaces
+as can be discovered from the visible running processes.</p>
+<p>Both CLI tools are implemented in the same module
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">linuxns_rel.tools.lshierns</span></code>.</p>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Without much ado, let’s try some examples. Simply import the
+<a class="reference internal" href="#module-linuxns_rel" title="linuxns_rel"><code class="xref py py-mod docutils literal notranslate"><span class="pre">linuxns_rel</span></code></a> package to discover Linux kernel namespace
+relationships in Python.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">linuxns_rel</span>
+</pre></div>
+</div>
+<p>Let’s get the owner user namespace of your Python script, and then
+print the user name of this owner.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pwd</span> <span class="k">import</span> <span class="n">getpwuid</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_userns</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/net&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">owner_ns</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">owner_uid</span> <span class="o">=</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_owner_uid</span><span class="p">(</span><span class="n">owner_ns</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;owning user:&#39;</span><span class="p">,</span> <span class="n">getpwuid</span><span class="p">(</span><span class="n">owner_uid</span><span class="p">)</span><span class="o">.</span><span class="n">pw_name</span><span class="p">)</span>
+<span class="go">owning user: root</span>
+</pre></div>
+</div>
+<p>Let’s get the parent user namespace of the user namespace our Python
+interpreter runs in.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_parentns</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/user&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">parent_userns</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">PermissionError</span>: <span class="n">[Errno 1] Operation not permitted</span>
+</pre></div>
+</div>
+<p>Now, here’s the caveat: when we run this inside either the so-called
+“root” user namespace so that there’s no parent, or we don’t have the
+privileges to learn the parent, then Linux will in both cases return
+an error, wrapped in a Python <code class="xref py py-exc docutils literal notranslate"><span class="pre">PermissionError</span></code>.</p>
+<p>All functions expecting a namespace reference, either accept:</p>
+<ul class="simple">
+<li>a string that represents a filesystem path, such as
+‘/proc/self/ns/user’.</li>
+<li>a TextIO object, as returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">open()</span></code> or some of the namespace
+relation functions, namely <a class="reference internal" href="#linuxns_rel.get_userns" title="linuxns_rel.get_userns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_userns()</span></code></a> and
+<a class="reference internal" href="#linuxns_rel.get_parentns" title="linuxns_rel.get_parentns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_parentns()</span></code></a>.</li>
+<li>a file descriptor or file number, such as returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">fileno()</span></code>.</li>
+</ul>
+<p>Please note that there is no way to get a filesystem path name returned
+by <a class="reference internal" href="#linuxns_rel.get_userns" title="linuxns_rel.get_userns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_userns()</span></code></a> and <a class="reference internal" href="#linuxns_rel.get_parentns" title="linuxns_rel.get_parentns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_parentns()</span></code></a>: as Linux kernel
+namespaces might even not be referenced in the filesystem and due to
+the way *nix filesystems work in general, there is no way to get back
+a filesystem path name from an open file.</p>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWCGROUP">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWCGROUP</code><em class="property"> = 33554432</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWCGROUP" title="Permalink to this definition">¶</a></dt>
+<dd><p>cgroup namespace type constant.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWIPC">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWIPC</code><em class="property"> = 134217728</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWIPC" title="Permalink to this definition">¶</a></dt>
+<dd><p>inter-process communication namespace type constant.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWNET">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWNET</code><em class="property"> = 1073741824</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWNET" title="Permalink to this definition">¶</a></dt>
+<dd><p>network namespace type constant.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWNS">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWNS</code><em class="property"> = 131072</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWNS" title="Permalink to this definition">¶</a></dt>
+<dd><p>mount namespace type constant.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWPID">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWPID</code><em class="property"> = 536870912</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWPID" title="Permalink to this definition">¶</a></dt>
+<dd><p>PID namespace type constant.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWUSER">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWUSER</code><em class="property"> = 268435456</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWUSER" title="Permalink to this definition">¶</a></dt>
+<dd><p>user namespace type constant.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="linuxns_rel.CLONE_NEWUTS">
+<code class="descclassname">linuxns_rel.</code><code class="descname">CLONE_NEWUTS</code><em class="property"> = 67108864</em><a class="headerlink" href="#linuxns_rel.CLONE_NEWUTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>uts (that is, *nix timesharing system) namespace type constant.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="linuxns_rel.get_nstype">
+<code class="descclassname">linuxns_rel.</code><code class="descname">get_nstype</code><span class="sig-paren">(</span><em>nsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="_modules/linuxns_rel.html#get_nstype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_nstype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the type of namespace. The namespace can be referenced
+either via an open file, file descriptor, or path string.</p>
+<p>The type returned is one of: <a class="reference internal" href="#linuxns_rel.CLONE_NEWNS" title="linuxns_rel.CLONE_NEWNS"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWNS</span></code></a>,
+<a class="reference internal" href="#linuxns_rel.CLONE_NEWCGROUP" title="linuxns_rel.CLONE_NEWCGROUP"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWCGROUP</span></code></a>, <a class="reference internal" href="#linuxns_rel.CLONE_NEWUTS" title="linuxns_rel.CLONE_NEWUTS"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWUTS</span></code></a>,
+<a class="reference internal" href="#linuxns_rel.CLONE_NEWIPC" title="linuxns_rel.CLONE_NEWIPC"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWIPC</span></code></a>, <a class="reference internal" href="#linuxns_rel.CLONE_NEWUSER" title="linuxns_rel.CLONE_NEWUSER"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWUSER</span></code></a>,
+<a class="reference internal" href="#linuxns_rel.CLONE_NEWPID" title="linuxns_rel.CLONE_NEWPID"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWPID</span></code></a>, <a class="reference internal" href="#linuxns_rel.CLONE_NEWNET" title="linuxns_rel.CLONE_NEWNET"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWNET</span></code></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">linuxns_rel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_nstype</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/net&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">CLONE_NEWNET</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>If you already have an open file referencing a Linux namespace, then
+you might use that directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/net&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">netns_f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_nstype</span><span class="p">(</span><span class="n">netns_f</span><span class="p">)</span> <span class="o">==</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">CLONE_NEWNET</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="linuxns_rel.get_owner_uid">
+<code class="descclassname">linuxns_rel.</code><code class="descname">get_owner_uid</code><span class="sig-paren">(</span><em>usernsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="_modules/linuxns_rel.html#get_owner_uid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_owner_uid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the user ID of the owner of a user namespace, that is,
+the user ID of the process that created the user namespace. The
+user namespace parameter can be either an open file, file
+descriptor, or path string.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">linuxns_rel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_owner_uid</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/user&#39;</span><span class="p">)</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="linuxns_rel.get_parentns">
+<code class="descclassname">linuxns_rel.</code><code class="descname">get_parentns</code><span class="sig-paren">(</span><em>nsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; TextIO<a class="reference internal" href="_modules/linuxns_rel.html#get_parentns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_parentns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parent namespace of a namespace, in form of a
+file object. The namespace parameter can be either an open file,
+file descriptor, or path string.</p>
+<p>You can then use the returned file object for further namespace
+operations, such as iterative calls to <a class="reference internal" href="#linuxns_rel.get_parentns" title="linuxns_rel.get_parentns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_parentns()</span></code></a>,
+specifying each time the file object returned by the previous call.</p>
+<p>However, it is <strong>impossible</strong> to retrieve a filesystem path,
+because Linux kernel namespaces might even not appear in the
+filesystem at all (such as “hidden” user namespaces without
+processes).</p>
+<p>At this time, only two out of the implemented Linux kernel
+namespaces are hierarchical: the PID and user namespaces. All other
+namespaces are flat, despite what you first might have expected.
+In the case of user namespaces, the parent of a user namespace is
+the same as the owning user namespace of a user namespace.</p>
+<p>In case you’ve reached the top of the hierarchical namespaces (at
+least from your point of view), then you’ll get a
+<code class="xref py py-exc docutils literal notranslate"><span class="pre">PermissionError</span></code>. This also happens when you have
+insufficient rights to further go up a namespace hierarchy.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">linuxns_rel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_parentns</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/user&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">parent_owner_f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">PermissionError</span>: <span class="n">[Errno 1] Operation not permitted</span>
+</pre></div>
+</div>
+<p>When you ask for the parent namespace of a _flat_ namespace, you’ll
+get an <code class="xref py py-exc docutils literal notranslate"><span class="pre">OSError</span></code> instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_parentns</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/uts&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">parent_owner_f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">OSError</span>: <span class="n">[Errno 22] Invalid argument</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="linuxns_rel.get_userns">
+<code class="descclassname">linuxns_rel.</code><code class="descname">get_userns</code><span class="sig-paren">(</span><em>nsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; TextIO<a class="reference internal" href="_modules/linuxns_rel.html#get_userns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_userns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the user namespace owning a namespace, in form of a
+file object referencing the owning user namespace. The owned
+namespace parameter can be either an open file, file descriptor, or
+path string.</p>
+<p>So let’s get the owning user namespace of the PID namespace that
+our Python interpreter is using, and print it’s user ID. It will be
+root (unless you are running this inside a sandbox which uses
+a different owning user namespace).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">linuxns_rel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_userns</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/pid&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">owning_userns_f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_owner_uid</span><span class="p">(</span><span class="n">owning_userns_f</span><span class="p">)</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<p>Please note that the owning user namespace of a user namespace is
+its parent user namespace, so <a class="reference internal" href="#linuxns_rel.get_userns" title="linuxns_rel.get_userns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_userns()</span></code></a> and
+<a class="reference internal" href="#linuxns_rel.get_parentns" title="linuxns_rel.get_parentns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_parentns()</span></code></a> are synonymous in this case.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="linuxns_rel.nstype_str">
+<code class="descclassname">linuxns_rel.</code><code class="descname">nstype_str</code><span class="sig-paren">(</span><em>nstype: int</em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/linuxns_rel.html#nstype_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.nstype_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the type name for a certain namespace type. Typically,
+this function is used in  the context of <a class="reference internal" href="#linuxns_rel.get_nstype" title="linuxns_rel.get_nstype"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_nstype()</span></code></a>, where
+all you got is a file, but not a path to (incorrectly) guess the
+type name of namespace from.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">linuxns_rel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">linuxns_rel</span><span class="o">.</span><span class="n">nstype_str</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_nstype</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/net&#39;</span><span class="p">))</span>
+<span class="go">&#39;net&#39;</span>
+</pre></div>
+</div>
+<p>So, what type of namespace does <a class="reference internal" href="#linuxns_rel.get_userns" title="linuxns_rel.get_userns"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_userns()</span></code></a> return? As you
+might already guess: a user namespace. But let’s check that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">linuxns_rel</span><span class="o">.</span><span class="n">nstype_str</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_nstype</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">linuxns_rel</span><span class="o">.</span><span class="n">get_userns</span><span class="p">(</span><span class="s1">&#39;/proc/self/ns/net&#39;</span><span class="p">)))</span>
+<span class="go">&#39;user&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Harald Albrecht.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.9.0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

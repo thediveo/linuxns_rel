@@ -38,7 +38,8 @@ setup(
     },
     install_requires=[
         'psutil',
-        'asciitree'
+        'asciitree',
+        'graphviz'
     ],
     extras_require={
         'dev': [

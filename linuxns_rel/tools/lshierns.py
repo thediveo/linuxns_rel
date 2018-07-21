@@ -277,7 +277,7 @@ def lspidns() -> None:
     HierarchicalNamespaceIndex(CLONE_NEWPID).render()
 
 
-def graphns() -> None:
+def lsnsgraph() -> None:
     from graphviz import Digraph
     import linuxns_rel.tools.xdg as xdg
     import base64
@@ -365,7 +365,7 @@ if __name__ == '__main__':
     import sys
 
     if len(sys.argv) > 1 and sys.argv[1] == '-g':
-        graphns()
+        lsnsgraph()
     else:
         lsuserns()
         lspidns()

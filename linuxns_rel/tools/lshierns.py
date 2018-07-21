@@ -293,7 +293,9 @@ def graphns() -> None:
 
     def traverse_nodes(dot: Digraph, xns: HierarchicalNamespace,
                        prefix: str) -> None:
-        dot.node(ns_node_id(xns, prefix), '%s:[%d]' % (prefix, xns.id))
+        dot.node(ns_node_id(xns, prefix), '%s:[%d]' % (prefix, xns.id),
+                 style='filled',
+                 fillcolor='#ffffff')
         for child in xns.children:
             traverse_nodes(dot, child, prefix)
 
@@ -301,7 +303,9 @@ def graphns() -> None:
                            prefix: str) -> None:
         if prefix != 'user':
             dot.edge(ns_node_id(xns, prefix),
-                     ns_node_id(xns.ownerns_id, 'user'))
+                     ns_node_id(xns.ownerns_id, 'user'),
+                     style='dashed',
+                     constraint='false')
         for child in xns.children:
             dot.edge(ns_node_id(xns, prefix),
                      ns_node_id(child, prefix),
@@ -315,10 +319,17 @@ def graphns() -> None:
 
     with dot.subgraph(name='cluster_pid') as pid_cluster:
         with dot.subgraph(name='cluster_user') as user_cluster:
-            pid_cluster.attr(label='PID')
-            user_cluster.attr(label='user')
+            # Configure the cluster subgraphs
+            pid_cluster.attr(label='PID',
+                             color='#85ad85',
+                             style='filled',
+                             fillcolor='#e6ffe6')
+            user_cluster.attr(label='user',
+                              color='#7598bd',
+                              style='filled',
+                              fillcolor='#e6f2ff')
 
-            # Set all hierarchical namespace roots elements to be on
+            # Set all hierarchical namespace root elements to be on
             # the "same" rank, so GraphViz positions them at the same
             # level.
             with dot.subgraph(name='group') as g:
@@ -342,10 +353,11 @@ def graphns() -> None:
             for _, user_ns in userns_index._roots.items():
                 traverse_relations(user_cluster, user_ns, 'user')
 
-    image = dot.pipe(format='svg')
-    url = 'data:text/html,<img%%20src="data:image/svg+xml;base64,%s">' % \
+    # Work around base64-encoded data URIs with mime type image/svg
+    # not getting rendered when opened, but only after reloading.
+    image = dot.pipe(format='pdf')
+    url = 'data:application/pdf;base64,' + \
           base64.b64encode(image).decode('utf-8')
-    print(url)
     xdg.default_webbrowser_open(url)
 
 

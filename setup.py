@@ -34,7 +34,7 @@ setup(
         'console_scripts': [
             'lsuserns=linuxns_rel.tools.lshierns:lsuserns',
             'lspidns=linuxns_rel.tools.lshierns:lspidns',
-            'lsnsgraph=linuxns_rel.tools.lshierns:lsnsgraph'
+            'graphns=linuxns_rel.tools.lshierns:graphns'
         ]
     },
     install_requires=[

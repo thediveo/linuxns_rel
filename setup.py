@@ -33,12 +33,14 @@ setup(
     entry_points={
         'console_scripts': [
             'lsuserns=linuxns_rel.tools.lshierns:lsuserns',
-            'lspidns=linuxns_rel.tools.lshierns:lspidns'
+            'lspidns=linuxns_rel.tools.lshierns:lspidns',
+            'graphns=linuxns_rel.tools.lshierns:graphns'
         ]
     },
     install_requires=[
         'psutil',
-        'asciitree'
+        'asciitree',
+        'graphviz'
     ],
     extras_require={
         'dev': [

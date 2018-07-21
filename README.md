@@ -89,6 +89,18 @@ run. In our example, we didn't create new PID namespaces when using
 `unshare`, so we see only additional PID namespaces created by
 Chromium (Firefox doesn't create them though).
 
+## Namespace Graph
+
+Okay, with the famous `graphviz` installed (`apt-get install graphviz`)
+now simply do:
+
+```bash
+$ lsnsgraph
+```
+
+...and you get something fancy with arrows, et cetera:
+
+![hierarchical namespace graph](doc/source/_static/hns-graph.png)
 
 # Potentially FAQs
 

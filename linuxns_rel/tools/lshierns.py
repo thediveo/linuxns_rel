@@ -56,6 +56,15 @@ class HierarchicalNamespaceIndex:
         self._discover_from_proc()
         self._discover_missing_parents()
 
+    def __getitem__(self, item: int) -> 'HierarchicalNamespace':
+        """Looks up an hierarchical namespace object by its inode number
+        identifier."""
+        return self._index[item]
+
+    @property
+    def items(self) -> Dict[int, 'HierarchicalNamespace']:
+        return self._index
+
     def _get_owner(self, ns_f) -> Tuple[int, int]:
         """Given a hierarchical namespace reference, returns a tuple of
         the owner's user ID and user namespace inode number."""
@@ -242,7 +251,7 @@ class HierarchicalNamespace:
             parent.children.append(self)
 
 
-def lsuserns():
+def lsuserns() -> None:
     """lsuserns CLI."""
     import argparse
 
@@ -255,7 +264,7 @@ def lsuserns():
     HierarchicalNamespaceIndex(CLONE_NEWUSER).render()
 
 
-def lspidns():
+def lspidns() -> None:
     """lspidns CLI."""
     import argparse
 
@@ -268,6 +277,95 @@ def lspidns():
     HierarchicalNamespaceIndex(CLONE_NEWPID).render()
 
 
+def graphns() -> None:
+    from graphviz import Digraph
+    import linuxns_rel.tools.xdg as xdg
+    import base64
+
+    pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
+    userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER)
+
+    def ns_node_id(xns: [HierarchicalNamespace, int], prefix: str) \
+            -> str:
+        if hasattr(xns, 'id'):
+            return '%s-%d' % (prefix, xns.id)
+        return '%s-%d' % (prefix, xns)
+
+    def traverse_nodes(dot: Digraph, xns: HierarchicalNamespace,
+                       prefix: str) -> None:
+        dot.node(ns_node_id(xns, prefix), '%s:[%d]' % (prefix, xns.id),
+                 style='filled',
+                 fillcolor='#ffffff')
+        for child in xns.children:
+            traverse_nodes(dot, child, prefix)
+
+    def traverse_relations(dot: Digraph, xns: HierarchicalNamespace,
+                           prefix: str) -> None:
+        if prefix != 'user':
+            dot.edge(ns_node_id(xns, prefix),
+                     ns_node_id(xns.ownerns_id, 'user'),
+                     style='dashed',
+                     constraint='false')
+        for child in xns.children:
+            dot.edge(ns_node_id(xns, prefix),
+                     ns_node_id(child, prefix),
+                     dir='back')
+            traverse_relations(dot, child, prefix)
+
+    dot = Digraph('test',
+                  comment='PID and USER namespaces',
+                  format='png')
+    dot.attr(rankdir='TB', newrank='true')
+
+    with dot.subgraph(name='cluster_pid') as pid_cluster:
+        with dot.subgraph(name='cluster_user') as user_cluster:
+            # Configure the cluster subgraphs
+            pid_cluster.attr(label='PID',
+                             color='#85ad85',
+                             style='filled',
+                             fillcolor='#e6ffe6')
+            user_cluster.attr(label='user',
+                              color='#7598bd',
+                              style='filled',
+                              fillcolor='#e6f2ff')
+
+            # Set all hierarchical namespace root elements to be on
+            # the "same" rank, so GraphViz positions them at the same
+            # level.
+            with dot.subgraph(name='group') as g:
+                g.attr(rank='same')
+                for _, pid_ns in pidns_index._roots.items():
+                    g.node(ns_node_id(pid_ns, 'pid'))
+                for _, user_ns in userns_index._roots.items():
+                    g.node(ns_node_id(user_ns, 'user'))
+
+            # Now add all (remaining) nodes within each hierarchical
+            # namespace.
+            for _, pid_ns in pidns_index._roots.items():
+                traverse_nodes(pid_cluster, pid_ns, 'pid')
+            for _, user_ns in userns_index._roots.items():
+                traverse_nodes(user_cluster, user_ns, 'user')
+
+            # And finally add in the parent-child relationships, as
+            # well as the owner relationships.
+            for _, pid_ns in pidns_index._roots.items():
+                traverse_relations(pid_cluster, pid_ns, 'pid')
+            for _, user_ns in userns_index._roots.items():
+                traverse_relations(user_cluster, user_ns, 'user')
+
+    # Work around base64-encoded data URIs with mime type image/svg
+    # not getting rendered when opened, but only after reloading.
+    image = dot.pipe(format='pdf')
+    url = 'data:application/pdf;base64,' + \
+          base64.b64encode(image).decode('utf-8')
+    xdg.default_webbrowser_open(url)
+
+
 if __name__ == '__main__':
-    lsuserns()
-    lspidns()
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == '-g':
+        graphns()
+    else:
+        lsuserns()
+        lspidns()

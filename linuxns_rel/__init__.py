@@ -25,10 +25,10 @@ the owner's user ID of a namespace, and some more.
 CLI
 ---
 
-This library comes with two simple CLI tools: ``lsuserns`` and
-``lspidns``. These simply pretty-print the tree of Linux user (or
-PID) namespaces as can be discovered from the visible running
-processes.
+This library comes with three simple CLI tools: ``lsuserns``,
+``lspidns``, and ``graphns``. The first two tools simply pretty-print
+the tree of Linux user (or PID) namespaces as can be discovered from
+the visible running processes. And the third? We'll see...
 
 To add some spice to the output, first open some user namespaces in
 a separate terminal session (fails? see
@@ -53,8 +53,21 @@ a separate terminal session (fails? see
              └── user:[4026532694] owner foo (1000)
                  └── user:[4026532753] owner foo (1000)
 
-Both CLI tools are implemented in the same module
+Bored of ASCII? Let's see a real graph (make sure that you've installed
+``graphviz`` on your system, such as ``apt-get install graphviz``); this
+example was taken using a freshly started chromium, the above user
+namespace command, and finally also a firefox open.
+
+.. code-block:: console
+
+    $ graphns
+
+.. image:: _static/hns-graph.png
+
+
+All CLI tools are implemented in the same module
 :mod:`linuxns_rel.tools.lshierns`.
+
 
 Examples
 --------
@@ -115,7 +128,7 @@ from typing import TextIO
 
 
 # library/package semantic version
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also

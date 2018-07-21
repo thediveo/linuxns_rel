@@ -279,6 +279,8 @@ def lspidns() -> None:
 
 def graphns() -> None:
     from graphviz import Digraph
+    import linuxns_rel.tools.xdg as xdg
+    import base64
 
     pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
     userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER)
@@ -340,7 +342,11 @@ def graphns() -> None:
             for _, user_ns in userns_index._roots.items():
                 traverse_relations(user_cluster, user_ns, 'user')
 
-    dot.view()
+    image = dot.pipe(format='svg')
+    url = 'data:text/html,<img%%20src="data:image/svg+xml;base64,%s">' % \
+          base64.b64encode(image).decode('utf-8')
+    print(url)
+    xdg.default_webbrowser_open(url)
 
 
 if __name__ == '__main__':

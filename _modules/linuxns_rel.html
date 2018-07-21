@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>linuxns_rel &mdash; linuxns-rel 1.0.0 documentation</title>
+  <title>linuxns_rel &mdash; linuxns-rel 1.0.1 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -170,10 +170,10 @@
 <span class="sd">CLI</span>
 <span class="sd">---</span>
 
-<span class="sd">This library comes with two simple CLI tools: ``lsuserns`` and</span>
-<span class="sd">``lspidns``. These simply pretty-print the tree of Linux user (or</span>
-<span class="sd">PID) namespaces as can be discovered from the visible running</span>
-<span class="sd">processes.</span>
+<span class="sd">This library comes with three simple CLI tools: ``lsuserns``,</span>
+<span class="sd">``lspidns``, and ``graphns``. The first two tools simply pretty-print</span>
+<span class="sd">the tree of Linux user (or PID) namespaces as can be discovered from</span>
+<span class="sd">the visible running processes. And the third? We&#39;ll see...</span>
 
 <span class="sd">To add some spice to the output, first open some user namespaces in</span>
 <span class="sd">a separate terminal session (fails? see</span>
@@ -198,8 +198,21 @@
 <span class="sd">             └── user:[4026532694] owner foo (1000)</span>
 <span class="sd">                 └── user:[4026532753] owner foo (1000)</span>
 
-<span class="sd">Both CLI tools are implemented in the same module</span>
+<span class="sd">Bored of ASCII? Let&#39;s see a real graph (make sure that you&#39;ve installed</span>
+<span class="sd">``graphviz`` on your system, such as ``apt-get install graphviz``); this</span>
+<span class="sd">example was taken using a freshly started chromium, the above user</span>
+<span class="sd">namespace command, and finally also a firefox open.</span>
+
+<span class="sd">.. code-block:: console</span>
+
+<span class="sd">    $ graphns</span>
+
+<span class="sd">.. image:: _static/hns-graph.png</span>
+
+
+<span class="sd">All CLI tools are implemented in the same module</span>
 <span class="sd">:mod:`linuxns_rel.tools.lshierns`.</span>
+
 
 <span class="sd">Examples</span>
 <span class="sd">--------</span>
@@ -260,7 +273,7 @@
 
 
 <span class="c1"># library/package semantic version</span>
-<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.0&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.1&#39;</span>
 
 <span class="c1"># Linux namespace type constants; these are used with several of the</span>
 <span class="c1"># namespace related functions, such as clone() in particular, but also</span>
@@ -557,7 +570,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.0.0',
+            VERSION:'1.0.1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

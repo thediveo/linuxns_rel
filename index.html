@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 1.0.0 documentation</title>
+  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 1.0.1 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -169,10 +169,10 @@ the owner’s user ID of a namespace, and some more.</p>
 </ul>
 <div class="section" id="cli">
 <h2>CLI<a class="headerlink" href="#cli" title="Permalink to this headline">¶</a></h2>
-<p>This library comes with two simple CLI tools: <code class="docutils literal notranslate"><span class="pre">lsuserns</span></code> and
-<code class="docutils literal notranslate"><span class="pre">lspidns</span></code>. These simply pretty-print the tree of Linux user (or
-PID) namespaces as can be discovered from the visible running
-processes.</p>
+<p>This library comes with three simple CLI tools: <code class="docutils literal notranslate"><span class="pre">lsuserns</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lspidns</span></code>, and <code class="docutils literal notranslate"><span class="pre">graphns</span></code>. The first two tools simply pretty-print
+the tree of Linux user (or PID) namespaces as can be discovered from
+the visible running processes. And the third? We’ll see…</p>
 <p>To add some spice to the output, first open some user namespaces in
 a separate terminal session (fails? see
 <a class="reference external" href="https://unix.stackexchange.com/questions/303213/how-to-enable-user-namespaces-in-the-kernel-for-unprivileged-unshare">how to enable user_namespaces in the kernel? for unprivileged “unshare”</a>):</p>
@@ -192,7 +192,15 @@ a separate terminal session (fails? see
 <span class="go">             └── user:[4026532753] owner foo (1000)</span>
 </pre></div>
 </div>
-<p>Both CLI tools are implemented in the same module
+<p>Bored of ASCII? Let’s see a real graph (make sure that you’ve installed
+<code class="docutils literal notranslate"><span class="pre">graphviz</span></code> on your system, such as <code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">graphviz</span></code>); this
+example was taken using a freshly started chromium, the above user
+namespace command, and finally also a firefox open.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> graphns
+</pre></div>
+</div>
+<img alt="_static/hns-graph.png" src="_static/hns-graph.png" />
+<p>All CLI tools are implemented in the same module
 <code class="xref py py-mod docutils literal notranslate"><span class="pre">linuxns_rel.tools.lshierns</span></code>.</p>
 </div>
 <div class="section" id="examples">
@@ -451,7 +459,7 @@ might already guess: a user namespace. But let’s check that:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0.0',
+            VERSION:'1.0.1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

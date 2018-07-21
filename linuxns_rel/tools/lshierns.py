@@ -316,22 +316,29 @@ def graphns() -> None:
             pid_cluster.attr(label='PID')
             user_cluster.attr(label='user')
 
+            # Set all hierarchical namespace roots elements to be on
+            # the "same" rank, so GraphViz positions them at the same
+            # level.
+            with dot.subgraph(name='group') as g:
+                g.attr(rank='same')
+                for _, pid_ns in pidns_index._roots.items():
+                    g.node(ns_node_id(pid_ns, 'pid'))
+                for _, user_ns in userns_index._roots.items():
+                    g.node(ns_node_id(user_ns, 'user'))
+
+            # Now add all (remaining) nodes within each hierarchical
+            # namespace.
             for _, pid_ns in pidns_index._roots.items():
                 traverse_nodes(pid_cluster, pid_ns, 'pid')
             for _, user_ns in userns_index._roots.items():
                 traverse_nodes(user_cluster, user_ns, 'user')
 
+            # And finally add in the parent-child relationships, as
+            # well as the owner relationships.
             for _, pid_ns in pidns_index._roots.items():
                 traverse_relations(pid_cluster, pid_ns, 'pid')
             for _, user_ns in userns_index._roots.items():
                 traverse_relations(user_cluster, user_ns, 'user')
-
-    with dot.subgraph(name='group') as g:
-        g.attr(rank='same')
-        for _, pid_ns in pidns_index._roots.items():
-            g.node(ns_node_id(pid_ns, 'pid'))
-        for _, user_ns in userns_index._roots.items():
-            g.node(ns_node_id(user_ns, 'user'))
 
     dot.view()
 

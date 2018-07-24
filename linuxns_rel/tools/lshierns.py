@@ -279,8 +279,7 @@ def lspidns() -> None:
 
 def graphns() -> None:
     from graphviz import Digraph
-    import linuxns_rel.tools.xdg as xdg
-    import base64
+    import linuxns_rel.tools.viewer as viewer
 
     pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
     userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER)
@@ -355,10 +354,8 @@ def graphns() -> None:
 
     # Work around base64-encoded data URIs with mime type image/svg
     # not getting rendered when opened, but only after reloading.
-    image = dot.pipe(format='pdf')
-    url = 'data:application/pdf;base64,' + \
-          base64.b64encode(image).decode('utf-8')
-    xdg.default_webbrowser_open(url)
+    image = dot.pipe(format='svg')
+    viewer.view(image)
 
 
 if __name__ == '__main__':

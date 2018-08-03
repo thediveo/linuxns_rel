@@ -33,7 +33,8 @@ def view(content: [str, bytes]) -> None:
         ])
     cmd.extend([
         sys.executable,
-        '-m', 'linuxns_rel.tools.viewer_impl'
+        '-m', 'linuxns_rel.tools.viewer_impl',
+        '-t', 'PID and user namespaces graph'
     ])
     viewer_process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     if isinstance(content, str):

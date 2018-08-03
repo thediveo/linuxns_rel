@@ -98,7 +98,8 @@ class SvgViewerMainWindow(QMainWindow):
     """Saves and restores the viewer window position and geometry
     automatically."""
 
-    def __init__(self, content: str, parent=None) -> None:
+    def __init__(self, content: str, title: str='', parent=None) \
+            -> None:
         # noinspection PyArgumentList
         super().__init__(parent)
 
@@ -112,7 +113,8 @@ class SvgViewerMainWindow(QMainWindow):
 
         self.view = SvgView(content)
         self.setCentralWidget(self.view)
-        self.setWindowTitle('SVG Viewer')
+        self.setWindowTitle(
+            title if title is not None else 'SVG Viewer')
 
     def keyPressEvent(self, event: QKeyEvent):
         """Handles "q" key to close (and exit) the SVG viewer.
@@ -138,15 +140,23 @@ class SvgViewerMainWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Saves the current window position and geometry upon closing
-        the viewer window."""
+        the viewer window.
+        """
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState())
         super().closeEvent(event)
 
 
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--title', default='SVG Viewer')
+    my_args, qt_args = parser.parse_known_args()
+
     content = sys.stdin.read()
-    app = QtWidgets.QApplication(sys.argv)
-    mw = SvgViewerMainWindow(content)
+
+    app = QtWidgets.QApplication(sys.argv[:1] + qt_args)
+    mw = SvgViewerMainWindow(content, title=my_args.title)
     mw.show()
     sys.exit(app.exec())

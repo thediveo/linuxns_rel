@@ -13,18 +13,25 @@
 # permissions and limitations under the License.
 
 
-from PyQt5 import QtWidgets, QtGui, QtSvg, QtCore
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsScene, QWidget
+from PyQt5 import QtWidgets, QtSvg, QtCore
+from PyQt5.QtWidgets import QFileDialog, QGraphicsItem, QGraphicsView, QGraphicsScene, QMainWindow, QWidget
+from PyQt5.QtGui import QCloseEvent, QKeyEvent, QWheelEvent
 import sys
 
 
 class SvgView(QGraphicsView):
-    """."""
+    """SVG content viewer, which allows the user to zoom in/out using
+    the mouse wheel, and to drag or scroll the image around.
+    """
 
-    def __init__(self, content: str, parent=None):
+    # noinspection PyShadowingNames
+    def __init__(self, content: str, parent: QWidget=None):
+        """Creates a new SVG viewer with the given SVG content.
+
+        :param content: the SVG content to show.
+        :param parent: optional parent widget, defaults to None.
+        """
         super().__init__(parent)
-
-        self.setViewport(QWidget())
 
         self.setScene(QGraphicsScene(self))
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
@@ -48,28 +55,54 @@ class SvgView(QGraphicsView):
         """Resets the zoom to 1.0."""
         self.resetTransform()
 
-    def wheelEvent(self, event: QtGui.QWheelEvent):
-        """Zooms in or out the SVG image, depending on which direction
-        the mouse wheel is being spun, and how far since the last
-        wheel spin event. Limits zooming to the range of 0.1x up to 10x.
+    def zoom(self, factor: float):
+        """Zooms in or out by a factor, limiting zooming to the range
+        between 0.1x and 10x.
+
+        :param factor: >1.0 to zoom in, and <1.0 to zoom out.
         """
         current_zoom = self.transform().m11()
-        print('current zoom', current_zoom)
-        sys.stdout.flush()
-        factor = pow(1.2, event.angleDelta().y() / 240.0)
         if factor < 1 and current_zoom > 0.1 \
                 or factor >= 1 and current_zoom < 10:
             self.scale(factor, factor)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handles keys "+" to zoom in, "-" to zoom out, and "1" to
+        reset the zoom back to 1x.
+        """
+        key = event.key()
+        if key == QtCore.Qt.Key_Plus:
+            self.zoom(1.2)
+            event.accept()
+        elif key == QtCore.Qt.Key_Minus:
+            self.zoom(1/1.2)
+            event.accept()
+        elif key == QtCore.Qt.Key_1:
+            self.reset_zoom()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def wheelEvent(self, event: QWheelEvent):
+        """Zooms in or out the SVG image, depending on which direction
+        the mouse wheel is being spun, and how far since the last
+        wheel spin event.
+        """
+        factor = pow(1.2, event.angleDelta().y() / 240.0)
+        self.zoom(factor)
         event.accept()
 
 
-class SvgViewerMainWindow(QtWidgets.QMainWindow):
+# noinspection PyShadowingNames
+class SvgViewerMainWindow(QMainWindow):
     """Saves and restores the viewer window position and geometry
     automatically."""
 
     def __init__(self, content: str, parent=None) -> None:
         # noinspection PyArgumentList
         super().__init__(parent)
+
+        self.content = content
 
         self.settings = QtCore.QSettings("TheDiveO", "LinuxNsRel")
         if self.settings.value("geometry") is not None:
@@ -81,7 +114,29 @@ class SvgViewerMainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.view)
         self.setWindowTitle('SVG Viewer')
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handles "q" key to close (and exit) the SVG viewer.
+        """
+        key = event.key()
+        if key == QtCore.Qt.Key_Q:
+            self.close()
+            event.accept()
+        elif key == QtCore.Qt.Key_S:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            filename, filter = QFileDialog.getSaveFileName(
+                self, 'Save SVG file',
+                '',
+                'SVG (*.svg);;All (*)',
+                options=options)
+            if filename:
+                with open(filename, 'w') as f:
+                    f.write(self.content)
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Saves the current window position and geometry upon closing
         the viewer window."""
         self.settings.setValue("geometry", self.saveGeometry())

@@ -95,12 +95,12 @@ Okay, with the famous `graphviz` installed (`apt-get install graphviz`)
 now simply do:
 
 ```bash
-$ lsnsgraph
+$ graphns
 ```
 
 ...and you get something fancy with arrows, et cetera:
 
-![hierarchical namespace graph](doc/source/_static/hns-graph.png)
+![hierarchical namespace graph](doc/source/_static/hns-graph.svg)
 
 # Potentially FAQs
 

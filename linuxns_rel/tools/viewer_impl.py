@@ -13,21 +13,73 @@
 # permissions and limitations under the License.
 
 
-from PyQt5 import QtWidgets, QtWebEngineWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtGui, QtSvg, QtCore
+from PyQt5.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsScene, QWidget
 import sys
 
 
-class ViewerWindow(QtWidgets.QMainWindow):
+class SvgView(QGraphicsView):
+    """."""
+
+    def __init__(self, content: str, parent=None):
+        super().__init__(parent)
+
+        self.setViewport(QWidget())
+
+        self.setScene(QGraphicsScene(self))
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+
+        svg_renderer = QtSvg.QSvgRenderer(content.encode('utf-8'))
+        svg_item = QtSvg.QGraphicsSvgItem()
+        svg_item.setSharedRenderer(svg_renderer)
+        svg_item.setFlags(QGraphicsItem.ItemClipsToShape)
+        svg_item.setCacheMode(QGraphicsItem.NoCache)
+        svg_item.setZValue(0)
+
+        scene = self.scene()
+        scene.clear()
+        self.resetTransform()
+        scene.addItem(svg_item)
+        scene.setSceneRect(svg_item.boundingRect())
+
+    def reset_zoom(self):
+        """Resets the zoom to 1.0."""
+        self.resetTransform()
+
+    def wheelEvent(self, event: QtGui.QWheelEvent):
+        """Zooms in or out the SVG image, depending on which direction
+        the mouse wheel is being spun, and how far since the last
+        wheel spin event. Limits zooming to the range of 0.1x up to 10x.
+        """
+        current_zoom = self.transform().m11()
+        print('current zoom', current_zoom)
+        sys.stdout.flush()
+        factor = pow(1.2, event.angleDelta().y() / 240.0)
+        if factor < 1 and current_zoom > 0.1 \
+                or factor >= 1 and current_zoom < 10:
+            self.scale(factor, factor)
+        event.accept()
+
+
+class SvgViewerMainWindow(QtWidgets.QMainWindow):
     """Saves and restores the viewer window position and geometry
     automatically."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, content: str, parent=None) -> None:
+        # noinspection PyArgumentList
+        super().__init__(parent)
+
         self.settings = QtCore.QSettings("TheDiveO", "LinuxNsRel")
         if self.settings.value("geometry") is not None:
             self.restoreGeometry(self.settings.value("geometry"))
         if self.settings.value("windowState") is not None:
             self.restoreState(self.settings.value("windowState"))
+
+        self.view = SvgView(content)
+        self.setCentralWidget(self.view)
+        self.setWindowTitle('SVG Viewer')
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Saves the current window position and geometry upon closing
@@ -37,29 +89,9 @@ class ViewerWindow(QtWidgets.QMainWindow):
         super().closeEvent(event)
 
 
-class Viewer:
-
-    def __init__(self, title: str, content: str) -> None:
-        app = QtWidgets.QApplication(list(sys.executable))
-        # noinspection PyArgumentList
-        main_window = ViewerWindow()
-        main_window.setObjectName('shell')
-        main_window.setWindowTitle(title)
-        main_window.setWindowIcon(QtGui.QIcon('favicon.png'))
-
-        web_view = QtWebEngineWidgets.QWebEngineView(main_window)
-        web_view.setObjectName('webui')
-        main_window.setCentralWidget(web_view)
-
-        web_view.setHtml(content)
-
-        main_window.show()
-        app.exec_()
-
-
-
-
 if __name__ == '__main__':
     content = sys.stdin.read()
-    Viewer('Namespaces', content)
-
+    app = QtWidgets.QApplication(sys.argv)
+    mw = SvgViewerMainWindow(content)
+    mw.show()
+    sys.exit(app.exec())

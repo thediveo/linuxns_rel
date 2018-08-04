@@ -40,7 +40,8 @@ setup(
     install_requires=[
         'psutil',
         'asciitree',
-        'graphviz'
+        'graphviz',
+        'PyQt5'
     ],
     extras_require={
         'dev': [

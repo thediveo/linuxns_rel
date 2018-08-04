@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 1.0.1 documentation</title>
+  <title>Linux Namespace Relations in Python &mdash; linuxns-rel 1.0.2 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.2
               </div>
             
           
@@ -192,16 +192,29 @@ a separate terminal session (fails? see
 <span class="go">             └── user:[4026532753] owner foo (1000)</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You may want to use <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">lsuserns</span></code> instead to really see
+<em>all</em> available user namespaces.</p>
+</div>
 <p>Bored of ASCII? Let’s see a real graph (make sure that you’ve installed
 <code class="docutils literal notranslate"><span class="pre">graphviz</span></code> on your system, such as <code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">graphviz</span></code>); this
 example was taken using a freshly started chromium, the above user
 namespace command, and finally also a firefox open.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> graphns
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo -E graphns
 </pre></div>
 </div>
-<img alt="_images/hns-graph.png" src="_images/hns-graph.png" />
-<p>All CLI tools are implemented in the same module
+<img alt="_images/hns-graph.svg" src="_images/hns-graph.svg" /><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">-E</span></code> ensures that you see all available user and PID
+namespaces, and also ensures that the graph viewer window correctly
+uses your desktop environment theme.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All CLI tools are implemented in the same module
 <code class="xref py py-mod docutils literal notranslate"><span class="pre">linuxns_rel.tools.lshierns</span></code>.</p>
+</div>
 </div>
 <div class="section" id="examples">
 <h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
@@ -459,7 +472,7 @@ might already guess: a user namespace. But let’s check that:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0.1',
+            VERSION:'1.0.2',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

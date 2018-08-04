@@ -62,7 +62,7 @@ namespace command, and finally also a firefox open.
 
     $ graphns
 
-.. image:: _static/hns-graph.png
+.. image:: _static/hns-graph.svg
 
 
 All CLI tools are implemented in the same module

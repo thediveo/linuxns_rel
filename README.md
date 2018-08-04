@@ -98,9 +98,19 @@ now simply do:
 $ graphns
 ```
 
-...and you get something fancy with arrows, et cetera:
+...and you get something fancy with arrows, et cetera, in a cute (_erm_,
+"qute") little viewer window:
 
 ![hierarchical namespace graph](doc/source/_static/hns-graph.svg)
+
+The view window supports these actions:
+- mouse drag: move the visible area around inside the view window
+  (usefull when either the graph is really large or when zoomed in).
+- mouse wheel: zoom in/out.
+- `+`/`-` keys: zoom in/out.
+- `1` key: reset zoom to 1x.
+- `s` key: save image to an SVG file.
+- `q` key: close and exit the viewer.
 
 # Potentially FAQs
 

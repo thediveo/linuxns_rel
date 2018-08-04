@@ -1,5 +1,14 @@
-"""A "qute" simple SVG viewer allowing pan and zoom, as well as saving
+"""A "qute" simple SVG viewer, allowing pan and zoom, as well as saving
 the displayed SVG image to a file.
+
+The rationales for this SVG viewer are twofold: first, it is much
+lighter than an embedded chromium web engine. Second, it allows to us
+to read the SVG image to be displayed from a pipe, without having to
+resort to temporary files in the filesystem, over which we have no
+lifecycle control when using a web browser. Third, we cannot "pipe"
+SVG content anymore using "data:" URLs into web browsers anymore for
+security reasons, as top-level navigational "data:" URLs have now been
+blocked.
 """
 
 # Copyright 2018 Harald Albrecht
@@ -19,7 +28,8 @@ the displayed SVG image to a file.
 
 from PyQt5 import QtWidgets, QtSvg, QtCore, QtGui
 from PyQt5.QtWidgets import (QFileDialog, QGraphicsItem, QGraphicsView,
-                             QGraphicsScene, QMainWindow, QWidget)
+                             QGraphicsScene, QMainWindow, QMessageBox,
+                             QWidget)
 from PyQt5.QtGui import QCloseEvent, QKeyEvent, QWheelEvent
 import sys
 from os import path
@@ -124,23 +134,44 @@ class SvgViewerMainWindow(QMainWindow):
         self.setWindowIcon(QtGui.QIcon(
             path.dirname(path.abspath(__file__)) + '/linuxnsrel.svg'))
 
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handles "q" key to close (and exit) the SVG viewer.
         """
         key = event.key()
         if key == QtCore.Qt.Key_Q:
+            event.accept()
             self.close()
-            event.accept()
         elif key == QtCore.Qt.Key_S:
-            filename, filter = QFileDialog.getSaveFileName(
-                self, 'Save SVG file', '',
-                'SVG (*.svg);;All (*)')
-            if filename:
-                with open(filename, 'w') as f:
-                    f.write(self.content)
             event.accept()
+            self.save()
+        elif key == QtCore.Qt.Key_H:
+            event.accept()
+            QMessageBox.information(
+                self,
+                'SVG Viewer Help',
+                'Mouse:\n'
+                '  wheel: zoom in/out\n'
+                'Keys:\n'
+                '  + or -: zoom in/out respectively\n'
+                '  1: reset zoom to 1x\n'
+                '  s: save SVG to file\n'
+                '  q: quit viewer\n'
+                '  h: show this help',
+                QMessageBox.Ok, QMessageBox.Ok)
         else:
             super().keyPressEvent(event)
+
+    def save(self) -> None:
+        """Shows a file save dialog and then saves the SVG image to the
+        user-specified file.
+        """
+        sd = QFileDialog()
+        sd.setDefaultSuffix('svg')
+        sd.setAcceptMode(QFileDialog.AcceptSave)
+        sd.setNameFilters(['SVG (*.svg)', 'All (*)'])
+        if sd.exec_() == QFileDialog.Accepted:
+            with open(sd.selectedFiles()[0], 'w') as f:
+                f.write(self.content)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Saves the current window position and geometry upon closing

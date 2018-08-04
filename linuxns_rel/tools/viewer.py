@@ -1,3 +1,12 @@
+"""Displays the SVG graph in a viewer window.
+
+Due to security constraints, we're not able to run web browsers with
+a (top-level) "data:" URL anymore. So we're using our own simple
+Qt5-based SVG viewer, which we need to spawn as the original non-root
+user -- otherwise Qt5 will refrain from working when tried to be run
+as the root user.
+"""
+
 # Copyright 2018 Harald Albrecht
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,14 +28,15 @@ import subprocess
 
 
 def view(content: [str, bytes]) -> None:
-    """Starts the viewer and shows the specified content. The viewer
-    always gets started as the original user in case the calling
-    module is run with sudo.
+    """Starts the SVG viewer and shows the specified content. The
+    viewer always gets started as the original user in case the
+    calling module is run with sudo.
     """
     cmd = []
     if 'SUDO_UID' in os.environ and 'SUDO_GID' in os.environ:
         cmd.extend([
             'sudo',
+            '-E',  # allows us to keep the correct desktop env setup
             '-u', '#%s' % os.environ['SUDO_UID'],
             '-g', '#%s' % os.environ['SUDO_GID'],
             '--'

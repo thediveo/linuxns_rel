@@ -34,8 +34,12 @@ on GitHub Pages.
 
 ## List User Namespaces
 
+You can either use a simple `lsuserns` or `sudo lsuserns` -- the latter
+ensures that you'll see _all_ user namespaces instead of only those you
+have user access to.
+
 ```bash
-$ lsuserns 
+$ sudo lsuserns 
 ```
 
 may yield something like this, a pretty hierarchy of Linux kernel user
@@ -70,7 +74,7 @@ configuration prohibits ordinary users to create new user namespaces.
 ## List PID Namespaces
 
 ```bash
-$ lspidns 
+$ sudo lspidns 
 ```
 
 shows the PID namespace hierarchy, such as:
@@ -95,8 +99,11 @@ Okay, with the famous `graphviz` installed (`apt-get install graphviz`)
 now simply do:
 
 ```bash
-$ graphns
+$ sudo -E graphns
 ```
+
+> Note: `-E` ensures that the graph viewer will correctly use the your
+> desktop environment theme.
 
 ...and you get something fancy with arrows, et cetera, in a cute (_erm_,
 "qute") little viewer window:
@@ -111,6 +118,7 @@ The view window supports these actions:
 - `1` key: reset zoom to 1x.
 - `s` key: save image to an SVG file.
 - `q` key: close and exit the viewer.
+- `h` key: show help on mouse and keys.
 
 # Potentially FAQs
 

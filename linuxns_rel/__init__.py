@@ -53,6 +53,9 @@ a separate terminal session (fails? see
              └── user:[4026532694] owner foo (1000)
                  └── user:[4026532753] owner foo (1000)
 
+.. note:: You may want to use ``sudo lsuserns`` instead to really see
+    *all* available user namespaces.
+
 Bored of ASCII? Let's see a real graph (make sure that you've installed
 ``graphviz`` on your system, such as ``apt-get install graphviz``); this
 example was taken using a freshly started chromium, the above user
@@ -60,13 +63,16 @@ namespace command, and finally also a firefox open.
 
 .. code-block:: console
 
-    $ graphns
+    $ sudo -E graphns
 
-.. image:: _static/hns-graph.png
+.. image:: _static/hns-graph.svg
 
+.. note:: ``sudo -E`` ensures that you see all available user and PID
+    namespaces, and also ensures that the graph viewer window correctly
+    uses your desktop environment theme.
 
-All CLI tools are implemented in the same module
-:mod:`linuxns_rel.tools.lshierns`.
+.. note:: All CLI tools are implemented in the same module
+    :mod:`linuxns_rel.tools.lshierns`.
 
 
 Examples
@@ -128,7 +134,7 @@ from typing import TextIO
 
 
 # library/package semantic version
-__version__ = '1.0.1'
+__version__ = '1.0.2webview'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also

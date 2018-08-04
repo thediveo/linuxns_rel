@@ -5,7 +5,6 @@
 htmlcov/
 venv/
 doc/build/
-doc/source/_static/
 *.pyc
 build/
 dist/

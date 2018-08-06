@@ -46,18 +46,16 @@ may yield something like this, a pretty hierarchy of Linux kernel user
 namespaces:
 
 ```
-user:[4026531837] owner root (0)
- ├── user:[4026532696] owner foobar (1000)
- ├── user:[4026532638] owner foobar (1000)
- ├── user:[4026532582] owner foobar (1000)
- │   └── user:[4026532639] owner foobar (1000)
- │       └── user:[4026532640] owner foobar (1000)
- │           └── user:[4026532641] owner foobar (1000)
- ├── user:[4026532466] owner foobar (1000)
- │   └── user:[4026532464] owner foobar (1000)
- ├── user:[4026532523] owner foobar (1000)
- └── user:[4026532583] owner foobar (1000)
-```
+user:[4026531837] process "init" owner root (0)
+ ├── user:[4026532465] process "firefox" owner foobar (1000)
+ ├── user:[4026532523] process owner foobar (1000)
+ │   └── user:[4026532524] process owner foobar (1000)
+ │       └── user:[4026532525] process owner foobar (1000)
+ │           └── user:[4026532526] process "bash" owner foobar (1000)
+ ├── user:[4026532699] process "firefox" owner foobar (1000)
+ ├── user:[4026532868] process "firefox" owner foobar (1000)
+ └── user:[4026532467] process owner foobar (1000)
+ ```
 
 If you have either Chromium or/and Firefox running, then these will
 add some user namespaces in order to sandbox their inner workings. And
@@ -80,11 +78,12 @@ $ sudo lspidns
 shows the PID namespace hierarchy, such as:
 
 ```
-pid:[4026531836] owner user:[4026531837] root (0)
- └── pid:[4026532467] owner user:[4026532466] foobar (1000)
-     ├── pid:[4026532465] owner user:[4026532464] foobar (1000)
-     ├── pid:[4026532526] owner user:[4026532464] foobar (1000)
-     └── pid:[4026532581] owner user:[4026532464] foobar (1000)
+pid:[4026531836] process "init" owner user:[4026531837] root (0)
+ ├── pid:[4026532532] process "sh" owner user:[4026531837] root (0)
+ └── pid:[4026532468] process "chromium-browser --type=zygote" owner user:[4026532467] foobar (1000)
+     ├── pid:[4026532464] process "chromium-browser" owner user:[4026532589] foobar (1000)
+     ├── pid:[4026532466] process "chromium-browser" owner user:[4026532589] foobar (1000)
+     └── pid:[4026532590] process "chromium-browser" owner user:[4026532589] foobar (1000)
 ```
 
 Don't worry that the PID namespace hierarchy doesn't match the user

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>linuxns_rel &mdash; linuxns-rel 1.0.2 documentation</title>
+  <title>linuxns_rel &mdash; linuxns-rel 1.0.3 documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                1.0.2
+                1.0.3
               </div>
             
           
@@ -187,16 +187,15 @@
 <span class="sd">.. code-block:: console</span>
 
 <span class="sd">    $ lsuserns</span>
-<span class="sd">    user:[4026531837] owner root (0)</span>
-<span class="sd">     ├── user:[4026532466] owner foo (1000)</span>
-<span class="sd">     ├── user:[4026532636] owner foo (1000)</span>
-<span class="sd">     ├── user:[4026532635] owner foo (1000)</span>
-<span class="sd">     ├── user:[4026532916] owner foo (1000)</span>
-<span class="sd">     ├── user:[4026532693] owner foo (1000)</span>
-<span class="sd">     └── user:[4026532578] owner foo (1000)</span>
-<span class="sd">         └── user:[4026532634] owner foo (1000)</span>
-<span class="sd">             └── user:[4026532694] owner foo (1000)</span>
-<span class="sd">                 └── user:[4026532753] owner foo (1000)</span>
+<span class="sd">    user:[4026531837] process &quot;init&quot; owner root (0)</span>
+<span class="sd">    ├── user:[4026532465] process &quot;firefox&quot; owner foobar (1000)</span>
+<span class="sd">    ├── user:[4026532523] process owner foobar (1000)</span>
+<span class="sd">    │   └── user:[4026532524] process owner foobar (1000)</span>
+<span class="sd">    │       └── user:[4026532525] process owner foobar (1000)</span>
+<span class="sd">    │           └── user:[4026532526] process &quot;bash&quot; owner foobar (1000)</span>
+<span class="sd">    ├── user:[4026532699] process &quot;firefox&quot; owner foobar (1000)</span>
+<span class="sd">    ├── user:[4026532868] process &quot;firefox&quot; owner foobar (1000)</span>
+<span class="sd">    └── user:[4026532467] process owner foobar (1000)</span>
 
 <span class="sd">.. note:: You may want to use ``sudo lsuserns`` instead to really see</span>
 <span class="sd">    *all* available user namespaces.</span>
@@ -279,7 +278,7 @@
 
 
 <span class="c1"># library/package semantic version</span>
-<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.2&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.3&#39;</span>
 
 <span class="c1"># Linux namespace type constants; these are used with several of the</span>
 <span class="c1"># namespace related functions, such as clone() in particular, but also</span>
@@ -576,7 +575,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.0.2',
+            VERSION:'1.0.3',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

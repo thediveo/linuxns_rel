@@ -42,16 +42,15 @@ a separate terminal session (fails? see
 .. code-block:: console
 
     $ lsuserns
-    user:[4026531837] owner root (0)
-     ├── user:[4026532466] owner foo (1000)
-     ├── user:[4026532636] owner foo (1000)
-     ├── user:[4026532635] owner foo (1000)
-     ├── user:[4026532916] owner foo (1000)
-     ├── user:[4026532693] owner foo (1000)
-     └── user:[4026532578] owner foo (1000)
-         └── user:[4026532634] owner foo (1000)
-             └── user:[4026532694] owner foo (1000)
-                 └── user:[4026532753] owner foo (1000)
+    user:[4026531837] process "init" owner root (0)
+    ├── user:[4026532465] process "firefox" owner foobar (1000)
+    ├── user:[4026532523] process owner foobar (1000)
+    │   └── user:[4026532524] process owner foobar (1000)
+    │       └── user:[4026532525] process owner foobar (1000)
+    │           └── user:[4026532526] process "bash" owner foobar (1000)
+    ├── user:[4026532699] process "firefox" owner foobar (1000)
+    ├── user:[4026532868] process "firefox" owner foobar (1000)
+    └── user:[4026532467] process owner foobar (1000)
 
 .. note:: You may want to use ``sudo lsuserns`` instead to really see
     *all* available user namespaces.

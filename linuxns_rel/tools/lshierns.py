@@ -96,13 +96,44 @@ class HierarchicalNamespaceIndex:
                     ns_id = os.stat(ns_f.fileno()).st_ino
                     if ns_id not in self._index:
                         owner_uid, ownerns_id = self._get_owner(ns_f)
+                        proc_name = self._discover_proc_name(
+                            process, ns_id)
                         self._index[ns_id] = HierarchicalNamespace(
-                            ns_id, owner_uid, ownerns_id, ns_ref)
+                            ns_id, owner_uid, ownerns_id,
+                            proc_name=proc_name,
+                            nsref=ns_ref)
             except PermissionError:
                 pass
 
+    def _discover_proc_name(self, process: psutil.Process, ns_id: int) \
+            -> Optional[str]:
+        """Discovers the process "name" for a given process. The name is
+        taken from the most senior process in the process tree which is
+        still in the same (PID or user) namespace as the process
+        initially specified to this function.
+        """
+        parent = process.parent()
+        while parent:
+            try:
+                parent_ns_id = os.stat(
+                    '/proc/%d/ns/%s' % (parent.pid, self._nstypename))\
+                    .st_ino
+            except PermissionError:
+                parent_ns_id = -1
+            if parent_ns_id != ns_id:
+                break
+            process = parent
+            parent = process.parent()
+        # prepare pretty-print process name: only use the last
+        # executable path element, and strip of a leading "-" indicating
+        # a login shell.
+        proc_name = process.cmdline()[0].split('/')[-1]
+        if proc_name[:1] == '-':
+            proc_name = proc_name[1:]
+        return proc_name
+
     def _discover_missing_parents(self) -> None:
-        """"""
+        """."""
         # Next in phase two, we now discover the parent-child
         # relationships of the hierarchical namespaces discovered
         # during phase one. The unexpected surprise here is that we
@@ -189,12 +220,15 @@ class HierarchicalNamespaceIndex:
             if not node.id:
                 return '?'
             if self._namespace_type_name == 'user':
-                return '%s:[%d] owner %s (%d)' % (
+                return '%s:[%d] process%s owner %s (%d)' % (
                     self._namespace_type_name, node.id,
-                    pwd.getpwuid(node.uid).pw_name,
-                    node.uid)
-            return '%s:[%d] owner user:[%d] %s (%d)' % (
+                    ' "%s"' % node.proc_name
+                    if node.proc_name else '',
+                    pwd.getpwuid(node.uid).pw_name, node.uid)
+            return '%s:[%d] process%s owner user:[%d] %s (%d)' % (
                 self._namespace_type_name, node.id,
+                ' "%s"' % node.proc_name
+                if node.proc_name else '',
                 node.ownerns_id,
                 pwd.getpwuid(node.uid).pw_name, node.uid)
 
@@ -217,6 +251,7 @@ class HierarchicalNamespace:
 
     # noinspection PyShadowingBuiltins
     def __init__(self, id: int, uid: int, ownerns_id: int,
+                 proc_name: Optional[str] = None,
                  nsref: Optional[str] = None) -> None:
         """Represents a Linux user namespace, together with its
         hierarchical parent-child relationships.
@@ -225,7 +260,7 @@ class HierarchicalNamespace:
           form of a inode number.
         :param uid: the user ID "owning" this user namespace.
         :param ownerns_id: the owning user namespace inode number.
-        :param nsref: a filesystem path reference to this user
+        :param nsref: a filesystem path reference to this user or PID
           namespace, if known. Defaults to None, unless specified
           otherwise.
         """
@@ -233,6 +268,7 @@ class HierarchicalNamespace:
         self.nsref = nsref
         self.ownerns_id = ownerns_id
         self.uid = uid
+        self.proc_name = proc_name
         self._parent: 'HierarchicalNamespace' = None
         self.children: List['HierarchicalNamespace'] = []
 
@@ -278,6 +314,11 @@ def lspidns() -> None:
 
 
 def graphns() -> None:
+    """graphns CLI: discovers the PID and user namespace and then
+    shows them as a graph in a new (SVG) viewer window.
+
+    This requires PyQt5 to be installed, as well as graphviz.
+    """
     from graphviz import Digraph
     import linuxns_rel.tools.viewer as viewer
 
@@ -292,7 +333,10 @@ def graphns() -> None:
 
     def traverse_nodes(dot: Digraph, xns: HierarchicalNamespace,
                        prefix: str) -> None:
-        dot.node(ns_node_id(xns, prefix), '%s:[%d]' % (prefix, xns.id),
+        dot.node(ns_node_id(xns, prefix),
+                 '%s%s:[%d]' % (
+                     '"%s"\n' % xns.proc_name if xns.proc_name else '',
+                     prefix, xns.id),
                  style='filled',
                  fillcolor='#ffffff')
         for child in xns.children:

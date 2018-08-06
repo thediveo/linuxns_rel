@@ -17,7 +17,7 @@ setup(
     long_description=ldesc,
     long_description_content_type='text/markdown',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3 :: Only',

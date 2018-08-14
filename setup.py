@@ -3,6 +3,22 @@
 from setuptools import setup
 from linuxns_rel import __version__
 import os
+import platform
+
+
+# Work around issues with Debian Stretch's outdated Python 3.5 and
+# recent PyQt5 releases from 5.11 and up: stick with at most 5.10.1.
+pyqt5_version = ''
+# noinspection PyBroadException
+try:
+    distname, distversion, _ = platform.linux_distribution()
+    if distname == 'debian':
+        from distutils.version import StrictVersion
+        v = StrictVersion(distversion)
+        if StrictVersion('9.0') <= v < StrictVersion('10.0'):
+            pyqt5_version = '<=5.10.1'
+except Exception as e:
+    pass
 
 with open(os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
@@ -41,7 +57,7 @@ setup(
         'psutil',
         'asciitree',
         'graphviz',
-        'PyQt5'
+        'PyQt5' + pyqt5_version
     ],
     extras_require={
         'dev': [

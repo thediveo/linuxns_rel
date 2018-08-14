@@ -48,11 +48,11 @@ class HierarchicalNamespaceIndex:
             raise ValueError('unsupported namespace type')
         # Dictionary of user/PID namespaces, indexed by their inode
         # numbers.
-        self._index: Dict[int, 'HierarchicalNamespace'] = dict()
+        self._index = dict() # type: Dict[int, 'HierarchicalNamespace']
         # Dictionary of root namespace(s), indexed by their inode
         # numbers (again). Normally, this should only show a single
         # root, unless we have limited visibility.
-        self._roots: Dict[int, 'HierarchicalNamespace'] = dict()
+        self._roots = dict() # type: Dict[int, 'HierarchicalNamespace']
         self._discover_from_proc()
         self._discover_missing_parents()
 
@@ -71,12 +71,20 @@ class HierarchicalNamespaceIndex:
         # Owner namespaces can be asked directly for their owner's
         # user ID
         if self._nstypename == 'user':
-            return get_owner_uid(ns_f), os.stat(ns_f.fileno()).st_ino
+            try:
+                owner_uid = get_owner_uid(ns_f)
+            except OSError:
+                owner_uid = -1
+            return owner_uid, os.stat(ns_f.fileno()).st_ino
         # Sigh. This is getting more involved: get the owner namespace,
         # only then get the owner's user ID. Or not, thanks to our
         # "AWFULLY GREAT" namespace API. So "AWESOME".
         with get_userns(ns_f) as owner_f:
-            return get_owner_uid(owner_f), \
+            try:
+                owner_uid = get_owner_uid(owner_f)
+            except OSError:
+                owner_uid = -1
+            return owner_uid, \
                    os.stat(owner_f.fileno()).st_ino
 
     def _discover_from_proc(self) -> None:
@@ -269,8 +277,8 @@ class HierarchicalNamespace:
         self.ownerns_id = ownerns_id
         self.uid = uid
         self.proc_name = proc_name
-        self._parent: 'HierarchicalNamespace' = None
-        self.children: List['HierarchicalNamespace'] = []
+        self._parent = None  # type: 'HierarchicalNamespace'
+        self.children = []  # type: List['HierarchicalNamespace']
 
     @property
     def parent(self) -> 'HierarchicalNamespace':

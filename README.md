@@ -1,6 +1,6 @@
 # Linux Kernel Namespace Relations
 
-> **NOTE:** Python 3.6+ supported only
+> **NOTE:** Python 3.5+ supported only
 
 This Python 3 package allows discovering the following Linux Kernel
 namespace relationships and properties, without having to delve into
@@ -22,6 +22,10 @@ this Python library.
 $ pip3 install linuxns-rel
 ```
 
+> **NOTE:** the installation automatically detects Debian 9 Stretch and
+> correctly handles installing the PyQt5 package, if it is missing, in
+> at most version 5.10.1 -- as this is the last known working PyQt5
+> release on Debian 9 Stretch.
 
 # API Documentation
 
@@ -31,6 +35,12 @@ on GitHub Pages.
 
 
 # CLI Examples
+
+> **NOTE:** Debian 9 Stretch users will lack the ability discover the
+> owner user ID of hierarchical namespaces. The reason is that Debian
+> 9 Stretch ships with outdated Linux kernels that lack the required
+> Kernel functionality. Please enjoy this kind of _stability_. (Or is
+> this "austerity"?)
 
 ## List User Namespaces
 

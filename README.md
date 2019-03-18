@@ -1,6 +1,6 @@
 # Linux Kernel Namespace Relations
 
-> **NOTE:** Python 3.5+ supported only
+> **NOTE:** Linux Kernel 4.9+ and Python 3.5+ supported only
 
 This Python 3 package allows discovering the following Linux Kernel
 namespace relationships and properties, without having to delve into

@@ -265,7 +265,7 @@ class HierarchicalNamespaceIndex:
             if not node.id:
                 return '?'
             if self._namespace_type_name == 'user':
-                return '%s:[%d] process%s owner "%s" (%d)' % (
+                return '%s:[%d] process%s namespace owning user "%s" (%d)' % (
                     self._namespace_type_name, node.id,
                     ' "%s"' % node.proc_name
                     if node.proc_name else '',

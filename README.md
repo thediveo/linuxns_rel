@@ -168,6 +168,7 @@ $ sudo -E graphns
 ![hierarchical namespace graph](doc/source/_static/hns-graph.svg)
 
 The view window supports these actions:
+
 - mouse drag: move the visible area around inside the view window
   (usefull when either the graph is really large or when zoomed in).
 - mouse wheel: zoom in/out.

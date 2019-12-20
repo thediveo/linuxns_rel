@@ -364,7 +364,7 @@ def lsuserns() -> None:
         help='show details: owned non-user namespaces'
     )
 
-    args = parser.parse_args() # pylint: disable=unused-variable
+    args = parser.parse_args()
     HierarchicalNamespaceIndex(CLONE_NEWUSER, args.details).render()
 
 
@@ -389,18 +389,30 @@ def graphns() -> None:
     """
     from graphviz import Digraph # pylint: disable=import-outside-toplevel
     import linuxns_rel.tools.viewer as viewer # pylint: disable=import-outside-toplevel
+    import argparse # pylint: disable=import-outside-toplevel
 
+    parser = argparse.ArgumentParser(
+        description='Show graphical Linux user+PID namespaces tree.'
+    )
+    parser.add_argument(
+        '-d', '--details', action='store_true',
+        help='show details: owned non-user namespaces'
+    )
+
+    args = parser.parse_args()
     pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
-    userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER)
+    userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER, args.details)
 
-    def ns_node_id(xns: [HierarchicalNamespace, int], prefix: str) \
-            -> str:
+    def ns_node_id(xns: [HierarchicalNamespace, int], prefix: str) -> str:
+        """Returns a unique, but predictable node identifier for a namespace."""
         if hasattr(xns, 'id'):
             return '%s-%d' % (prefix, xns.id)
         return '%s-%d' % (prefix, xns)
 
     def traverse_nodes(dot: Digraph, xns: HierarchicalNamespace,
                        prefix: str) -> None:
+        """Traverse and render a tree of hierarchical namespaces, with
+        owned non-user namespaces, if known."""
         dot.node(ns_node_id(xns, prefix),
                  '%s%s:[%d]' % (
                      '"%s"\n' % xns.proc_name if xns.proc_name else '',
@@ -409,6 +421,21 @@ def graphns() -> None:
                  fillcolor='#ffffff')
         for child in xns.children:
             traverse_nodes(dot, child, prefix)
+        if xns.owned_ns:
+            for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'uts'):
+                if len(xns.owned_ns[ns_type]) > 1:
+                    dot.node('owned-%s-%d' % (ns_type, xns.id), 
+                             ns_type,
+                             shape='folder',
+                             style='filled')
+                for ons in xns.owned_ns[ns_type]:
+                    dot.node(ns_node_id(ons, ns_type),
+                             '%s%s:[%d]' % (
+                                 '"%s"\n' % ons.proc_name if ons.proc_name else '',
+                                 ns_type, ons.id),
+                             shape='box',
+                             style='filled',
+                             fillcolor='#ffffff')
 
     def traverse_relations(dot: Digraph, xns: HierarchicalNamespace,
                            prefix: str) -> None:
@@ -422,6 +449,18 @@ def graphns() -> None:
                      ns_node_id(child, prefix),
                      dir='back')
             traverse_relations(dot, child, prefix)
+        if xns.owned_ns:
+            for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'uts'):
+                ownerid = ns_node_id(xns, prefix)
+                if len(xns.owned_ns[ns_type]) > 1:
+                    ownerid = 'owned-%s-%d' % (ns_type, xns.id)
+                    dot.edge(ns_node_id(xns, prefix),
+                             ownerid,
+                             dir='back')
+                for ons in xns.owned_ns[ns_type]:
+                    dot.edge(ownerid,
+                             ns_node_id(ons, ns_type),
+                             dir='back')
 
     dot = Digraph('test',
                   comment='PID and USER namespaces',

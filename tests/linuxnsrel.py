@@ -12,11 +12,13 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
+# pylint: disable=missing-module-docstring
 
-import linuxns_rel as nsr
 import os
 import unittest
 from typing import Tuple, TextIO
+
+import linuxns_rel as nsr
 
 
 class LxNsRelationsTests(unittest.TestCase):
@@ -34,13 +36,13 @@ class LxNsRelationsTests(unittest.TestCase):
     )  # type: Tuple[Tuple[str, int]]
 
     @staticmethod
-    def nspath(type_name: str, pid: int=0) -> str:
+    def nspath(type_name: str, pid: int = 0) -> str:
         """Returns filesystem path to the namespace of the specified
         type for the current process (such as 'net', 'user', et
         cetera)."""
         return '/proc/%s/ns/%s' % (
-                str(pid) if pid else 'self',
-                type_name)
+            str(pid) if pid else 'self',
+            type_name)
 
     @staticmethod
     def nsid(type_name_or_path: str) -> int:

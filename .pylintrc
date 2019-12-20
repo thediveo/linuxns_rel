@@ -1,0 +1,3 @@
+[TYPECHECK]
+ignored-classes=SubgraphContext
+good-names=f,nr,ns,id,g

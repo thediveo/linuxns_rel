@@ -118,7 +118,7 @@ All functions expecting a namespace reference, either accept:
 Please note that there is no way to get a filesystem path name returned
 by :func:`get_userns` and :func:`get_parentns`: as Linux kernel
 namespaces might even not be referenced in the filesystem and due to
-the way \*nix filesystems work in general, there is no way to get back
+the way *nix filesystems work in general, there is no way to get back
 a filesystem path name from an open file.
 
 API
@@ -133,7 +133,7 @@ from typing import TextIO
 
 
 # library/package semantic version
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also
@@ -176,30 +176,28 @@ _IOC_WRITE = 1
 _IOC_READ = 2
 
 
-# noinspection PyShadowingBuiltins,PyPep8Naming
-def _IOC(dir: int, type: int, nr: int, size: int) -> int:
+def _IOC(direction: int, cmdtype: int, nr: int, size: int) -> int: # pylint: disable=invalid-name
     """Returns an ioctl() request value, calculated for a specific ioctl
     call properties of parameter direction in/out, parameter size,
     type of ioctl, and command number.
 
-    :param dir: direction of parameter, either `_IOC_NONE`, `_IOC_READ`,
+    :param direction: of parameter, either `_IOC_NONE`, `_IOC_READ`,
       or `_IOC_WRITE`.
-    :param type: ioctl command "type"; this is basically for grouping
+    :param cmdtype: ioctl command "type"; this is basically for grouping
       individual commands into groups, such as `NSIO` for
       namespace-related ioctl()s.
     :param nr: individual command inside the `type` group.
     :param size: size of parameter in bytes, from 0 to 2**14-1.
     :return: ioctl request number.
     """
-    return ((dir << _IOC_DIRSHIFT) |
-            (type << _IOC_TYPESHIFT) |
+    return ((direction << _IOC_DIRSHIFT) |
+            (cmdtype << _IOC_TYPESHIFT) |
             (nr << _IOC_NRSHIFT) |
             (size << _IOC_SIZESHIFT))
 
 
-# noinspection PyShadowingBuiltins,PyPep8Naming
-def _IO(type: int, nr: int) -> int:
-    return _IOC(_IOC_NONE, type, nr, 0)
+def _IO(cmdtype: int, nr: int) -> int: # pylint: disable=invalid-name
+    return _IOC(_IOC_NONE, cmdtype, nr, 0)
 
 
 # https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/nsfs.h

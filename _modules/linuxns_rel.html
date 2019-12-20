@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>linuxns_rel &mdash; linuxns-rel 1.0.4 documentation</title>
+  <title>linuxns_rel &mdash; linuxns-rel 1.0.5 documentation</title>
   
 
   
@@ -17,32 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -56,7 +58,7 @@
             
             
               <div class="version">
-                1.0.4
+                1.0.5
               </div>
             
           
@@ -263,7 +265,7 @@
 <span class="sd">Please note that there is no way to get a filesystem path name returned</span>
 <span class="sd">by :func:`get_userns` and :func:`get_parentns`: as Linux kernel</span>
 <span class="sd">namespaces might even not be referenced in the filesystem and due to</span>
-<span class="sd">the way \*nix filesystems work in general, there is no way to get back</span>
+<span class="sd">the way unix-like filesystems work in general, there is no way to get back</span>
 <span class="sd">a filesystem path name from an open file.</span>
 
 <span class="sd">API</span>
@@ -272,13 +274,13 @@
 
 
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">fcntl</span> <span class="k">import</span> <span class="n">ioctl</span>
+<span class="kn">from</span> <span class="nn">fcntl</span> <span class="kn">import</span> <span class="n">ioctl</span>
 <span class="kn">import</span> <span class="nn">struct</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">TextIO</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TextIO</span>
 
 
 <span class="c1"># library/package semantic version</span>
-<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.4&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.0.5&#39;</span>
 
 <span class="c1"># Linux namespace type constants; these are used with several of the</span>
 <span class="c1"># namespace related functions, such as clone() in particular, but also</span>
@@ -321,30 +323,28 @@
 <span class="n">_IOC_READ</span> <span class="o">=</span> <span class="mi">2</span>
 
 
-<span class="c1"># noinspection PyShadowingBuiltins,PyPep8Naming</span>
-<span class="k">def</span> <span class="nf">_IOC</span><span class="p">(</span><span class="nb">dir</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">_IOC</span><span class="p">(</span><span class="n">direction</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cmdtype</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="c1"># pylint: disable=invalid-name</span>
     <span class="sd">&quot;&quot;&quot;Returns an ioctl() request value, calculated for a specific ioctl</span>
 <span class="sd">    call properties of parameter direction in/out, parameter size,</span>
 <span class="sd">    type of ioctl, and command number.</span>
 
-<span class="sd">    :param dir: direction of parameter, either `_IOC_NONE`, `_IOC_READ`,</span>
+<span class="sd">    :param direction: of parameter, either `_IOC_NONE`, `_IOC_READ`,</span>
 <span class="sd">      or `_IOC_WRITE`.</span>
-<span class="sd">    :param type: ioctl command &quot;type&quot;; this is basically for grouping</span>
+<span class="sd">    :param cmdtype: ioctl command &quot;type&quot;; this is basically for grouping</span>
 <span class="sd">      individual commands into groups, such as `NSIO` for</span>
 <span class="sd">      namespace-related ioctl()s.</span>
 <span class="sd">    :param nr: individual command inside the `type` group.</span>
 <span class="sd">    :param size: size of parameter in bytes, from 0 to 2**14-1.</span>
 <span class="sd">    :return: ioctl request number.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">((</span><span class="nb">dir</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_DIRSHIFT</span><span class="p">)</span> <span class="o">|</span>
-            <span class="p">(</span><span class="nb">type</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_TYPESHIFT</span><span class="p">)</span> <span class="o">|</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">direction</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_DIRSHIFT</span><span class="p">)</span> <span class="o">|</span>
+            <span class="p">(</span><span class="n">cmdtype</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_TYPESHIFT</span><span class="p">)</span> <span class="o">|</span>
             <span class="p">(</span><span class="n">nr</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_NRSHIFT</span><span class="p">)</span> <span class="o">|</span>
             <span class="p">(</span><span class="n">size</span> <span class="o">&lt;&lt;</span> <span class="n">_IOC_SIZESHIFT</span><span class="p">))</span>
 
 
-<span class="c1"># noinspection PyShadowingBuiltins,PyPep8Naming</span>
-<span class="k">def</span> <span class="nf">_IO</span><span class="p">(</span><span class="nb">type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">_IOC</span><span class="p">(</span><span class="n">_IOC_NONE</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">nr</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_IO</span><span class="p">(</span><span class="n">cmdtype</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="c1"># pylint: disable=invalid-name</span>
+    <span class="k">return</span> <span class="n">_IOC</span><span class="p">(</span><span class="n">_IOC_NONE</span><span class="p">,</span> <span class="n">cmdtype</span><span class="p">,</span> <span class="n">nr</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
 
 <span class="c1"># https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/nsfs.h</span>
@@ -553,7 +553,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Harald Albrecht.
+        &copy; Copyright 2018, Harald Albrecht
 
     </p>
   </div>
@@ -570,32 +570,16 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../',
-            VERSION:'1.0.4',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
-      <script type="text/javascript" src="../_static/doctools.js"></script>
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

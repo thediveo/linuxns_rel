@@ -118,7 +118,7 @@ All functions expecting a namespace reference, either accept:
 Please note that there is no way to get a filesystem path name returned
 by :func:`get_userns` and :func:`get_parentns`: as Linux kernel
 namespaces might even not be referenced in the filesystem and due to
-the way *nix filesystems work in general, there is no way to get back
+the way unix-like filesystems work in general, there is no way to get back
 a filesystem path name from an open file.
 
 API

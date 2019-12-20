@@ -12,14 +12,17 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring,missing-function-docstring
 
-import linuxns_rel as nsr
-import tests.linuxnsrel
 import subprocess
 import time
 
+import linuxns_rel as nsr
+import tests.linuxnsrel
 
-# noinspection PyPep8Naming
+
+# pylint: disable=invalid-name
 def skipWithoutSandbox(func):  # pragma: no cover
     """Decorates test functions to be skipped automatically if the
     unshare sandbox could not be created (due to insufficient

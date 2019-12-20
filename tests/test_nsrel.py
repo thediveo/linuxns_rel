@@ -12,9 +12,13 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring,missing-function-docstring
+
+import errno
+
 import linuxns_rel as nsr
 import tests.linuxnsrel
-import errno
 
 
 class LxNsRelationsBaseTests(tests.linuxnsrel.LxNsRelationsTests):

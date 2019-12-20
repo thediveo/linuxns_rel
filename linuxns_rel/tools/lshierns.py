@@ -36,7 +36,7 @@ class HierarchicalNamespaceIndex:
     """Index for hierarchical Linux kernel namespaces, specifically the
     PID and user hierarchical namespaces at this time."""
 
-    def __init__(self, namespace_type: int) -> None:
+    def __init__(self, namespace_type: int, details: bool = False) -> None:
         """Sets up a hierarchical namespace index by discovering the
         available namespaces of the specific namespace type.
 
@@ -49,6 +49,7 @@ class HierarchicalNamespaceIndex:
             self._nstypename = 'pid'
         else:
             raise ValueError('unsupported namespace type')
+        self._details = details
         # Dictionary of user/PID namespaces, indexed by their inode
         # numbers.
         self._index = dict() # type: Dict[int, 'HierarchicalNamespace']
@@ -58,7 +59,8 @@ class HierarchicalNamespaceIndex:
         self._roots = dict() # type: Dict[int, 'HierarchicalNamespace']
         self._discover_from_proc()
         self._discover_missing_parents()
-        self._discover_ownedns()
+        if self._details:
+            self._discover_ownedns()
 
     def __getitem__(self, item: int) -> 'HierarchicalNamespace':
         """Looks up an hierarchical namespace object by its inode number
@@ -265,7 +267,7 @@ class HierarchicalNamespaceIndex:
             if not node.id:
                 return '?'
             if self._namespace_type_name == 'user':
-                return '%s:[%d] process%s namespace owning user "%s" (%d)' % (
+                return '%s:[%d] process%s namespace-owning user "%s" (%d)' % (
                     self._namespace_type_name, node.id,
                     ' "%s"' % node.proc_name
                     if node.proc_name else '',
@@ -352,19 +354,23 @@ class HierarchicalNamespace: # pylint: disable=too-many-instance-attributes,too-
 
 def lsuserns() -> None:
     """lsuserns CLI."""
-    import argparse
+    import argparse # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser(
         description='Show Linux user namespace tree.'
     )
+    parser.add_argument(
+        '-d', '--details', action='store_true',
+        help='show details: owned non-user namespaces'
+    )
 
     args = parser.parse_args() # pylint: disable=unused-variable
-    HierarchicalNamespaceIndex(CLONE_NEWUSER).render()
+    HierarchicalNamespaceIndex(CLONE_NEWUSER, args.details).render()
 
 
 def lspidns() -> None:
     """lspidns CLI."""
-    import argparse
+    import argparse # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser(
         description='Show Linux PID namespace tree.'
@@ -381,8 +387,8 @@ def graphns() -> None:
 
     This requires PyQt5 to be installed, as well as graphviz.
     """
-    from graphviz import Digraph
-    import linuxns_rel.tools.viewer as viewer
+    from graphviz import Digraph # pylint: disable=import-outside-toplevel
+    import linuxns_rel.tools.viewer as viewer # pylint: disable=import-outside-toplevel
 
     pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
     userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER)

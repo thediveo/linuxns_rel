@@ -15,15 +15,14 @@
 # pylint: disable=missing-module-docstring
 
 import os
-import unittest
-from typing import Tuple, TextIO
+from typing import IO, Tuple
 
 import linuxns_rel as nsr
 
 
-class LxNsRelationsTests(unittest.TestCase):
-    """Abstract base class bringing in some useful helpers for
-    namespace unit tests."""
+class LxNsRelationsTestHelper:
+    """Abstract base class bringing in some useful helper functions and
+    constants for use in namespace unit tests."""
 
     NAMESPACES = (
         ('cgroup', nsr.CLONE_NEWCGROUP),
@@ -33,7 +32,7 @@ class LxNsRelationsTests(unittest.TestCase):
         ('pid', nsr.CLONE_NEWPID),
         ('user', nsr.CLONE_NEWUSER),
         ('uts', nsr.CLONE_NEWUTS)
-    )  # type: Tuple[Tuple[str, int]]
+    )  # type: Tuple[Tuple[str, int], ...]
 
     @staticmethod
     def nspath(type_name: str, pid: int = 0) -> str:
@@ -50,12 +49,12 @@ class LxNsRelationsTests(unittest.TestCase):
         namespace specified either by type ('net', 'user') or by
         filesystem path ('/proc/self/ns/pid')."""
         if '/' not in type_name_or_path:
-            type_name_or_path = LxNsRelationsTests.nspath(
+            type_name_or_path = LxNsRelationsTestHelper.nspath(
                 type_name_or_path)
         return os.stat(type_name_or_path).st_ino
 
     @staticmethod
-    def file_nsid(file: TextIO) -> int:
+    def file_nsid(file: IO) -> int:
         """Return the namespace identifier (inode number) of the
         namespace specified by a file."""
         return os.stat(file.fileno()).st_ino

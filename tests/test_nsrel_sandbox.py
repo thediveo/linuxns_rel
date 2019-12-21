@@ -17,9 +17,11 @@
 
 import subprocess
 import time
+from typing import Optional
+import pytest
 
 import linuxns_rel as nsr
-import tests.linuxnsrel
+from tests.linuxnsrel import LxNsRelationsTestHelper
 
 
 # pylint: disable=invalid-name
@@ -31,14 +33,14 @@ def skipWithoutSandbox(func):  # pragma: no cover
         if getattr(self, 'sandbox', None):
             func(self, *args, **kwargs)
         else:
-            self.skipTest('no user unshare sandbox available')
+            pytest.skip('no user unshare sandbox available')
     return wrapper
 
 
-class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
+class TestNsrWithSandbox(LxNsRelationsTestHelper):
 
     # Only a single sandbox for all tests.
-    sandbox = None  # type: subprocess.Popen
+    sandbox = None  # type: Optional[subprocess.Popen]
 
     @classmethod
     def setUpClass(cls): # pragma: no cover
@@ -80,7 +82,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
     @property
     def sandbox_pid(self):
         """Returns the PID of the sandbox, which is the sleeping cat."""
-        return NsrTestsWithSandbox.sandbox.pid
+        return self.sandbox.pid
 
     @skipWithoutSandbox
     def test_get_user_sandbox(self):
@@ -88,9 +90,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
         with nsr.get_userns(self.nspath('net', self.sandbox_pid)) \
                 as userns_f:
             netns_userns_id = self.file_nsid(userns_f)
-        self.assertEqual(
-            netns_userns_id, userns_id,
-            'get_userns returning sandbox user namespace')
+        assert netns_userns_id == userns_id, 'get_userns returning sandbox user namespace'
 
     @skipWithoutSandbox
     def test_get_parent_user(self):
@@ -99,9 +99,7 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
                 as sandbox_userns_f:
             with nsr.get_parentns(sandbox_userns_f) as parent_userns_f:
                 parent_userns_id = self.file_nsid(parent_userns_f)
-        self.assertEqual(
-            root_userns_id, parent_userns_id,
-            'get_parentns returning root user namespace')
+        assert root_userns_id == parent_userns_id, 'get_parentns returning root user namespace'
 
     @skipWithoutSandbox
     def test_get_user_of_user(self):
@@ -109,7 +107,4 @@ class NsrTestsWithSandbox(tests.linuxnsrel.LxNsRelationsTests):
         with nsr.get_userns(self.nspath('user', self.sandbox_pid)) \
                 as root_userns_alias_f:
             root_userns_alias_id = self.file_nsid(root_userns_alias_f)
-        self.assertEqual(
-            root_userns_id,
-            root_userns_alias_id,
-            'owner of sandbox owner is root')
+        assert root_userns_id == root_userns_alias_id, 'owner of sandbox owner is root'

@@ -129,7 +129,7 @@ API
 import os
 from fcntl import ioctl
 import struct
-from typing import TextIO
+from typing import Union, IO
 
 
 # library/package semantic version
@@ -253,7 +253,7 @@ def nstype_str(nstype: int) -> str:
         i=nstype, h=hex(nstype)))
 
 
-def get_nstype(nsref: [str, TextIO, int]) -> int:
+def get_nstype(nsref: Union[str, IO, int]) -> int:
     """Returns the type of namespace. The namespace can be referenced
     either via an open file, file descriptor, or path string.
 
@@ -276,16 +276,16 @@ def get_nstype(nsref: [str, TextIO, int]) -> int:
     if isinstance(nsref, str):
         with open(nsref) as f:
             return ioctl(f.fileno(), NS_GET_NSTYPE)
-    elif hasattr(nsref, 'fileno'):
-        return ioctl(nsref.fileno(), NS_GET_NSTYPE)
     elif isinstance(nsref, int):
         return ioctl(nsref, NS_GET_NSTYPE)
+    elif hasattr(nsref, 'fileno'):
+        return ioctl(nsref.fileno(), NS_GET_NSTYPE)
     else:
         raise TypeError('namespace reference must be str, int or '
                         'TextIO, not {t}'.format(t=type(nsref)))
 
 
-def get_nsrel(nsref: [str, TextIO, int], request: int) -> TextIO:
+def get_nsrel(nsref: Union[str, IO, int], request: int) -> IO:
     """Returns a new namespace reference that is related to a namespace
     in the way specified by the `request` parameter. The namespace
     parameter can be either an open file, file descriptor, or path
@@ -293,17 +293,17 @@ def get_nsrel(nsref: [str, TextIO, int], request: int) -> TextIO:
     if isinstance(nsref, str):
         with open(nsref) as f:
             userns = ioctl(f.fileno(), request)
-    elif hasattr(nsref, 'fileno'):
-        userns = ioctl(nsref.fileno(), request)
     elif isinstance(nsref, int):
         userns = ioctl(nsref, request)
+    elif hasattr(nsref, 'fileno'):
+        userns = ioctl(nsref.fileno(), request)
     else:
         raise TypeError('namespace reference must be str, int or '
                         'TextIO, not {t}'.format(t=type(nsref)))
     return os.fdopen(userns, 'r')
 
 
-def get_userns(nsref: [str, TextIO, int]) -> TextIO:
+def get_userns(nsref: Union[str, IO, int]) -> IO:
     """Returns the user namespace owning a namespace, in form of a
     file object referencing the owning user namespace. The owned
     namespace parameter can be either an open file, file descriptor, or
@@ -326,7 +326,7 @@ def get_userns(nsref: [str, TextIO, int]) -> TextIO:
     return get_nsrel(nsref, NS_GET_USERNS)
 
 
-def get_parentns(nsref: [str, TextIO, int]) -> TextIO:
+def get_parentns(nsref: Union[str, IO, int]) -> IO:
     """Returns the parent namespace of a namespace, in form of a
     file object. The namespace parameter can be either an open file,
     file descriptor, or path string.
@@ -370,7 +370,7 @@ def get_parentns(nsref: [str, TextIO, int]) -> TextIO:
     return get_nsrel(nsref, NS_GET_PARENT)
 
 
-def get_owner_uid(usernsref: [str, TextIO, int]) -> int:
+def get_owner_uid(usernsref: Union[str, IO, int]) -> int:
     """Returns the user ID of the owner of a user namespace, that is,
     the user ID of the process that created the user namespace. The
     user namespace parameter can be either an open file, file
@@ -386,10 +386,10 @@ def get_owner_uid(usernsref: [str, TextIO, int]) -> int:
     if isinstance(usernsref, str):
         with open(usernsref) as f:
             uid = ioctl(f.fileno(), NS_GET_OWNER_UID, uid)
-    elif hasattr(usernsref, 'fileno'):
-        uid = ioctl(usernsref.fileno(), NS_GET_OWNER_UID, uid)
     elif isinstance(usernsref, int):
         uid = ioctl(usernsref, NS_GET_OWNER_UID, uid)
+    elif hasattr(usernsref, 'fileno'):
+        uid = ioctl(usernsref.fileno(), NS_GET_OWNER_UID, uid)
     else:
         raise TypeError('namespace reference must be str, int or '
                         'TextIO, not {t}'.format(t=type(usernsref)))

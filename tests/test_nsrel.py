@@ -16,149 +16,111 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring
 
 import errno
+import pytest
 
 import linuxns_rel as nsr
-import tests.linuxnsrel
+from tests.linuxnsrel import LxNsRelationsTestHelper
 
 
-class LxNsRelationsBaseTests(tests.linuxnsrel.LxNsRelationsTests):
+class TestLxNsRelationsBase(LxNsRelationsTestHelper):
 
     def test_nstype_str(self):
         for ns_name, ns_type in self.NAMESPACES:
-            self.assertEqual(
-                nsr.nstype_str(ns_type),
-                ns_name,
-                'invalid name "%s" returned for '
+            assert nsr.nstype_str(ns_type) == ns_name, \
+                'invalid name "%s" returned for ' \
                 'namespace type value %d/%s' % (
                     nsr.nstype_str(ns_type),
                     ns_type,
                     hex(ns_type)
                 )
-            )
 
     def test_nstype_str_illegal_arg(self):
-        with self.assertRaises(
-                ValueError,
-                msg='accepts invalid namespace type value'):
+        with pytest.raises(ValueError):
             nsr.nstype_str(42)
+            pytest.fail('accepts invalid namespace type value')
 
     def test_get_nstype(self):
         for ns_name, ns_type in self.NAMESPACES:
             # by path...
-            self.assertEqual(
-                nsr.get_nstype(self.nspath(ns_name)),
-                ns_type,
-                'invalid namespace type returned '
+            assert nsr.get_nstype(self.nspath(ns_name)) == ns_type, \
+                'invalid namespace type returned ' \
                 'for "%s" namespace path' % ns_name
-            )
             with open(self.nspath(ns_name)) as f:
                 # by file...
-                self.assertEqual(
-                    nsr.get_nstype(f),
-                    ns_type,
-                    'invalid namespace type returned '
+                assert nsr.get_nstype(f) == ns_type, \
+                    'invalid namespace type returned ' \
                     'for "%s" file' % ns_name
-                )
                 # by fd...
-                self.assertEqual(
-                    nsr.get_nstype(f.fileno()),
-                    ns_type,
-                    'invalid namespace type returned '
+                assert nsr.get_nstype(f.fileno()) == ns_type, \
+                    'invalid namespace type returned ' \
                     'for "%s" fd' % ns_name
-                )
 
     def test_get_nstype_illegal_arg(self):
-        with self.assertRaises(
-                TypeError,
-                msg='accepting float namespace reference parameter'):
-            nsr.get_nstype(42.0)
-        with self.assertRaises(
-                TypeError,
-                msg='accepting None namespace reference parameter'):
-            nsr.get_nstype(None)
+        with pytest.raises(TypeError):
+            nsr.get_nstype(42.0) # type: ignore
+            pytest.fail('accepting float namespace reference parameter')
+        with pytest.raises(TypeError):
+            nsr.get_nstype(None) # type: ignore
+            pytest.fail('accepting None namespace reference parameter')
 
     def test_get_userns(self):
         user_nsid = self.nsid('user')
         # by path...
         with nsr.get_userns(self.nspath('net')) as owner_ns:
-            self.assertEqual(
-                self.file_nsid(owner_ns),
-                user_nsid,
+            assert self.file_nsid(owner_ns) == user_nsid, \
                 'invalid owning user namespace returned'
-            )
         with open(self.nspath('net')) as nsref:
             # by file...
             with nsr.get_userns(nsref) as owner_ns:
-                self.assertEqual(
-                    self.file_nsid(owner_ns),
-                    user_nsid,
+                assert self.file_nsid(owner_ns) == user_nsid, \
                     'invalid owning user namespace returned'
-                )
             # by fd...
             with nsr.get_userns(nsref.fileno()) as owner_ns:
-                self.assertEqual(
-                    self.file_nsid(owner_ns),
-                    user_nsid,
+                assert self.file_nsid(owner_ns) == user_nsid, \
                     'invalid owning user namespace returned'
-                )
 
     def test_get_userns_illegal_arg(self):
-        with self.assertRaises(
-                TypeError, msg='accepts invalid namespace value'):
-            nsr.get_userns(42.0)
+        with pytest.raises(TypeError):
+            nsr.get_userns(42.0) # type: ignore
+            pytest.fail('accepts invalid namespace value')
 
     def test_getparentns_in_root(self):
-        with self.assertRaises(
-                PermissionError, msg='parent of root user'):
+        with pytest.raises(PermissionError):
             nsr.get_parentns(self.nspath('user'))
+            pytest.fail('parent of root user')
 
     def test_getparentns_nonhierarchical_namespace(self):
-        with self.assertRaises(
-                OSError, msg='net namespace has a parent, seriously?')\
-                as oserr:
+        with pytest.raises(OSError) as oserr:
             nsr.get_parentns(self.nspath('net'))
-        self.assertEqual(
-            oserr.exception.errno, errno.EINVAL,
+            pytest.fail('net namespace has a parent, seriously?')
+        assert oserr.value.errno == errno.EINVAL, \
             'no parent for non-hierarchical namespace'
-        )
 
     def test_getparentns_illegal_arg(self):
-        with self.assertRaises(
-                TypeError,
-                msg='accepting float namespace reference parameter'):
-            nsr.get_parentns(42.0)
-        with self.assertRaises(
-                TypeError,
-                msg='accepting None namespace reference parameter'):
-            nsr.get_parentns(None)
+        with pytest.raises(TypeError):
+            nsr.get_parentns(42.0) # type: ignore
+            pytest.fail('accepting float namespace reference parameter')
+        with pytest.raises(TypeError):
+            nsr.get_parentns(None) # type: ignore
+            pytest.fail('accepting None namespace reference parameter')
 
     def test_owner_uid(self):
         # by path...
-        self.assertIn(
-            nsr.get_owner_uid(self.nspath('user')),
-            (0, 65534), # ...covers containerized CI test
+        # ...covers containerized CI test
+        assert nsr.get_owner_uid(self.nspath('user')) in (0, 65534), \
             'owner ID of root user namespace not root'
-        )
         with open(self.nspath('user')) as nsref:
             # by file...
-            self.assertEqual(
-                nsr.get_owner_uid(nsref),
-                0,
+            assert nsr.get_owner_uid(nsref) == 0, \
                 'owner ID of root user namespace not root'
-            )
             # by fd...
-            self.assertEqual(
-                nsr.get_owner_uid(nsref.fileno()),
-                0,
+            assert nsr.get_owner_uid(nsref.fileno()) == 0, \
                 'owner ID of root user namespace not root'
-            )
 
     def test_owner_uid_illegal_arg(self):
-        with self.assertRaises(
-                TypeError,
-                msg='accepting float namespace reference parameter'):
-            nsr.get_owner_uid(42.0)
-        with self.assertRaises(
-                TypeError,
-                msg='accepting None namespace reference parameter'):
-            nsr.get_owner_uid(None)
+        with pytest.raises(TypeError):
+            nsr.get_owner_uid(42.0) # type: ignore
+            pytest.raises('accepting float namespace reference parameter')
+        with pytest.raises(TypeError):
+            nsr.get_owner_uid(None) # type: ignore
+            pytest.raises('accepting None namespace reference parameter')

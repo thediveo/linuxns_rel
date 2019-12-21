@@ -8,3 +8,5 @@ doc/build/
 *.pyc
 build/
 dist/
+cov.xml
+.coverage

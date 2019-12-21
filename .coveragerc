@@ -1,2 +1,4 @@
+[run]
+omit=linuxns_rel/tools/*
 [html]
 title=Linux Namespace Relations

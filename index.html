@@ -308,7 +308,7 @@ a filesystem path name from an open file.</p>
 
 <dl class="function">
 <dt id="linuxns_rel.get_nstype">
-<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_nstype</code><span class="sig-paren">(</span><em class="sig-param">nsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="_modules/linuxns_rel.html#get_nstype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_nstype" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_nstype</code><span class="sig-paren">(</span><em class="sig-param">nsref: Union[str, IO, int]</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="_modules/linuxns_rel.html#get_nstype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_nstype" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the type of namespace. The namespace can be referenced
 either via an open file, file descriptor, or path string.</p>
 <p>The type returned is one of: <a class="reference internal" href="#linuxns_rel.CLONE_NEWNS" title="linuxns_rel.CLONE_NEWNS"><code class="xref py py-const docutils literal notranslate"><span class="pre">CLONE_NEWNS</span></code></a>,
@@ -331,7 +331,7 @@ you might use that directly:</p>
 
 <dl class="function">
 <dt id="linuxns_rel.get_owner_uid">
-<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_owner_uid</code><span class="sig-paren">(</span><em class="sig-param">usernsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="_modules/linuxns_rel.html#get_owner_uid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_owner_uid" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_owner_uid</code><span class="sig-paren">(</span><em class="sig-param">usernsref: Union[str, IO, int]</em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="_modules/linuxns_rel.html#get_owner_uid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_owner_uid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the user ID of the owner of a user namespace, that is,
 the user ID of the process that created the user namespace. The
 user namespace parameter can be either an open file, file
@@ -345,7 +345,7 @@ descriptor, or path string.</p>
 
 <dl class="function">
 <dt id="linuxns_rel.get_parentns">
-<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_parentns</code><span class="sig-paren">(</span><em class="sig-param">nsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; TextIO<a class="reference internal" href="_modules/linuxns_rel.html#get_parentns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_parentns" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_parentns</code><span class="sig-paren">(</span><em class="sig-param">nsref: Union[str, IO, int]</em><span class="sig-paren">)</span> &#x2192; IO<a class="reference internal" href="_modules/linuxns_rel.html#get_parentns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_parentns" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the parent namespace of a namespace, in form of a
 file object. The namespace parameter can be either an open file,
 file descriptor, or path string.</p>
@@ -386,7 +386,7 @@ get an <code class="xref py py-exc docutils literal notranslate"><span class="pr
 
 <dl class="function">
 <dt id="linuxns_rel.get_userns">
-<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_userns</code><span class="sig-paren">(</span><em class="sig-param">nsref: [&lt;class 'str'&gt;, typing.TextIO, &lt;class 'int'&gt;]</em><span class="sig-paren">)</span> &#x2192; TextIO<a class="reference internal" href="_modules/linuxns_rel.html#get_userns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_userns" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">linuxns_rel.</code><code class="sig-name descname">get_userns</code><span class="sig-paren">(</span><em class="sig-param">nsref: Union[str, IO, int]</em><span class="sig-paren">)</span> &#x2192; IO<a class="reference internal" href="_modules/linuxns_rel.html#get_userns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linuxns_rel.get_userns" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the user namespace owning a namespace, in form of a
 file object referencing the owning user namespace. The owned
 namespace parameter can be either an open file, file descriptor, or

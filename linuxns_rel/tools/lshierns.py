@@ -22,6 +22,7 @@ from typing import Dict, IO, List, Optional, Tuple, Union
 
 import psutil
 
+import sty
 import asciitree
 import asciitree.traversal
 from asciitree.drawing import BoxStyle, BOX_LIGHT
@@ -33,12 +34,16 @@ from linuxns_rel import (
 
 
 class HierarchicalNamespaceIndex:
-    """Index for hierarchical Linux kernel namespaces, specifically the
-    PID and user hierarchical namespaces at this time."""
+    """An index to lookup namespaces by their id (inode number) and their
+    hierarchical parent-child relationships for PID namespaces or user
+    namespaces. Each index handles only a single namespace type, which must be
+    either the PID or user type, as these are the only two types of
+    hierarchical namespaces currently defined in the Linux kernel.
+    """
 
-    def __init__(self, namespace_type: int, details: bool = False) -> None:
+    def __init__(self, namespace_type: int) -> None:
         """Sets up a hierarchical namespace index by discovering the
-        available namespaces of the specific namespace type.
+        available namespaces of the specified namespace type.
 
         :param namespace_type: type of hierarchical namespace, either
           `linuxns_rel.CLONE_NEWUSER` or `linuxns_rel.CLONE_NEWPID`.
@@ -49,7 +54,6 @@ class HierarchicalNamespaceIndex:
             self._nstypename = 'pid'
         else:
             raise ValueError('unsupported namespace type')
-        self._details = details
         # Dictionary of user/PID namespaces, indexed by their inode
         # numbers.
         self._index = dict() # type: Dict[int, HierarchicalNamespace]
@@ -59,22 +63,24 @@ class HierarchicalNamespaceIndex:
         self._roots = dict() # type: Dict[int, HierarchicalNamespace]
         self._discover_from_proc()
         self._discover_missing_parents()
-        if self._details:
-            self._discover_ownedns()
 
     def __getitem__(self, item: int) -> 'HierarchicalNamespace':
         """Looks up an hierarchical namespace object by its inode number
-        identifier."""
+        identifier.
+        """
         return self._index[item]
 
     @property
     def items(self) -> Dict[int, 'HierarchicalNamespace']:
-        """The dict mapping namespace ids to HierarchicalNamespace objects."""
+        """The dict mapping namespace identifiers to their
+        HierarchicalNamespace objects.
+        """
         return self._index
 
     def _get_owner(self, ns_f) -> Tuple[int, int]:
         """Given a hierarchical namespace reference, returns a tuple of
-        the owner's user ID and user namespace inode number."""
+        the owner's user ID and user namespace inode number.
+        """
         # Owner namespaces can be asked directly for their owner's
         # user ID
         if self._nstypename == 'user':
@@ -95,12 +101,11 @@ class HierarchicalNamespaceIndex:
 
     def _discover_from_proc(self) -> None:
         """Discovers namespaces via `/proc/[PID]/ns/[TYPE]`."""
-        # Never assume that this will locate *all* namespaces in the
-        # hierarchy yet, but only those currently in use by
-        # processes. In fact, since we're skimming the proc
-        # filesystem, we may miss *user* namespaces, but I currently
-        # lack to see a situation with hidden PID namespaces. Anyway,
-        # in this first phase, we only collect namespaces, but don't
+        # Never assume that this will locate *all* namespaces in the hierarchy
+        # yet, but only those currently in use by processes. In fact, since
+        # we're skimming the proc filesystem, we may miss namespaces when
+        # there are no processes using them, but still within the hierarchy.
+        # Anyway, in this first phase, we only collect namespaces, but don't
         # bother with the parent-child relationships.
         for process in psutil.process_iter():
             try:
@@ -115,25 +120,6 @@ class HierarchicalNamespaceIndex:
                             ns_id, owner_uid, ownerns_id,
                             proc_name=proc_name,
                             nsref=ns_ref)
-            except PermissionError:
-                pass
-
-    def _discover_ownedns(self) -> None:
-        """Discovers non-user namespaces with their owning user namespaces."""
-        namespaces = dict()  # type: Dict[int, None]
-        for process in psutil.process_iter():
-            try:
-                for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
-                    ns_ref = '/proc/%d/ns/%s' % (process.pid, ns_type)
-                    ns_id = os.stat(ns_ref).st_ino
-                    if ns_id not in namespaces:
-                        namespaces[ns_id] = None
-                        with get_userns(ns_ref) as owner_f:
-                            owner_userns_id = os.stat(owner_f.fileno()).st_ino
-                        proc_name = self._discover_proc_name(process, ns_id)
-                        owner = self._index[owner_userns_id]
-                        owner.owned_ns[ns_type].append(
-                            Namespace(ns_id, ns_type, proc_name))
             except PermissionError:
                 pass
 
@@ -156,12 +142,14 @@ class HierarchicalNamespaceIndex:
                 break
             process = parent
             parent = process.parent()
-        # prepare pretty-print process name: only use the last
-        # executable path element, and strip of a leading "-" indicating
-        # a login shell.
+        # prepare the pretty-print-able process name: only use the last
+        # executable path element, and strip of a leading "-" indicating a
+        # login shell. In case the process' command line is inaccessible to
+        # us, then go for the process name.
         try:
             proc_name = process.cmdline()[0].split('/')[-1]
         except IndexError:
+            # Mimic what the "ps" CLI tool does in case of process names...
             proc_name = "[%s]" % process.name()
         if proc_name[:1] == '-':
             proc_name = proc_name[1:]
@@ -169,17 +157,16 @@ class HierarchicalNamespaceIndex:
 
     def _discover_missing_parents(self) -> None:
         """."""
-        # Next in phase two, we now discover the parent-child
-        # relationships of the hierarchical namespaces discovered
-        # during phase one. The unexpected surprise here is that we
-        # may find parent namespaces that we didn't discover so far:
-        # because these intermediate namespaces don't have any
-        # process joined to them. But as these are hierarchical
-        # namespaces you can't simply leave out an intermediate
-        # namespace node. So we need to update the namespace index
-        # while we iterate over a copy of it from phase one. This is
-        # fine, as we recursively discover parent namespaces starting
-        # from each namespace from phase one.
+        # Next in phase two, we now discover the parent-child relationships of
+        # the hierarchical namespaces discovered during phase one. The
+        # unexpected surprise here is that we may find parent namespaces that
+        # we didn't discover so far: because these intermediate namespaces
+        # don't have any process joined to them. But as these are hierarchical
+        # namespaces you can't simply leave out an intermediate namespace
+        # node. So we need to update the namespace index while we iterate over
+        # a copy of it from phase one. This is fine, as we recursively
+        # discover parent namespaces starting from each namespace from phase
+        # one.
         for _, ns in self._index.copy().items():
             ns_ref = None # type: Optional[IO]
             try:
@@ -191,11 +178,10 @@ class HierarchicalNamespaceIndex:
                         parent_ns_ref = get_parentns(ns_ref)
                         parent_ns_id = os.stat(
                             parent_ns_ref.fileno()).st_ino
-                        # Hoi! We might find out about parents we
-                        # didn't know of so far from the process
-                        # discovery phase. So we might need to add
-                        # these newly found parents to our user
-                        # namespace index.
+                        # Hoi! We might find out about parents we didn't know
+                        # of so far from the process discovery phase. So we
+                        # might need to add these newly found parents to our
+                        # user namespace index.
                         if parent_ns_id not in self._index:
                             parent_uid, ownerns_id = self._get_owner(
                                 parent_ns_ref)
@@ -203,93 +189,170 @@ class HierarchicalNamespaceIndex:
                                 HierarchicalNamespace(parent_ns_id,
                                                       parent_uid,
                                                       ownerns_id)
-                        # Wire up our parent-child namespace
-                        # relationship.
+                        # Wire up our parent-child namespace relationship.
                         self._index[ns_id].parent = \
                             self._index[parent_ns_id]
                     except PermissionError:
-                        # No more parent, or the parent is out of our
-                        # scope.
+                        # No more parent, or the parent is out of our scope.
                         parent_ns_ref = None
                         if ns_id not in self._roots:
                             self._roots[ns_id] = self._index[ns_id]
-                    # Release the current user namespace file
-                    # reference, and switch over to the parent's user
-                    #  namespace file reference.
+                    # Release the current user namespace file reference, and
+                    # switch over to the parent's user namespace file
+                    # reference.
                     ns_ref.close()
                     ns_ref = parent_ns_ref
             finally:
-                # Whatever has happened, make sure to *not* leak (or,
-                # rather waste) the user namespace file reference.
+                # Whatever has happened, make sure to *not* leak (or, rather
+                # waste) the user namespace file reference.
                 if ns_ref:
                     ns_ref.close() # type: ignore
 
-    class HierarchicalNamespaceTraversal(Traversal):
-        """Traverses a tree of user namespace objects."""
-
-        def __init__(self, namespace_type_name: str) -> None:
-            super().__init__()
-            self._namespace_type_name = namespace_type_name
-
-        def get_root(self, tree: Dict[int, 'HierarchicalNamespace']) \
-                -> 'HierarchicalNamespace':
-            """Return the root node of a tree. In case we get more
-            than a single root of user namespaces, we return a "fake"
-            ro(o)t instead, which then contains the list/tuple of
-            user namespaces. """
-            if len(tree) == 1:
-                return next(iter(tree.values()))
-            fake_root = HierarchicalNamespace(0, 0, 0)
-            fake_root.children = tree.values() # type: ignore
-            return fake_root
-
-        def get_children(self, node: Union['HierarchicalNamespace', 'Namespace']) \
-                -> List[Union['HierarchicalNamespace', 'Namespace']]:
-            """Returns the list of child user namespaces for a user
-            namespace node, or an empty list in case this is a str node."""
-            if isinstance(node, Namespace):
-                return []
-            # A hierarchical namespace object might not only have child
-            # namespaces, but also owned namespaces are shown as children.
-            owned = [ns \
-                for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts') \
-                    for ns in node.owned_ns[ns_type]]
-            return sorted(owned, key=lambda n: "%s%d" % (n.ns_type, n.id)) + \
-                sorted(node.children, key=lambda n: n.id) # type: ignore
-
-        def get_text(self, node: Union['HierarchicalNamespace', 'Namespace']) -> str:
-            """Returns the text for a user namespace node. It
-            consists of the user namespace identifier (inode number).
-            """
-            if isinstance(node, Namespace):
-                return "⟜ %s:[%d] process \"%s\"" % \
-                    (node.ns_type, node.id, node.proc_name)
-            # It's a hierarchical namespace object...
-            if not node.id:
-                return '?'
-            if self._namespace_type_name == 'user':
-                return '%s:[%d] process%s namespace-owning user "%s" (%d)' % (
-                    self._namespace_type_name, node.id,
-                    ' "%s"' % node.proc_name
-                    if node.proc_name else '',
-                    pwd.getpwuid(node.uid).pw_name, node.uid)
-            return '%s:[%d] process%s owner user:[%d] "%s" (%d)' % (
-                self._namespace_type_name, node.id,
-                ' "%s"' % node.proc_name
-                if node.proc_name else '',
-                node.ownerns_id,
-                pwd.getpwuid(node.uid).pw_name, node.uid)
-
-    def render(self) -> None:
+    def render(self, colorize: bool = False) -> None:
         """Renders an ASCII tree using our hierarchical namespace
         traversal object."""
         print(
             asciitree.LeftAligned(
-                traverse=HierarchicalNamespaceIndex.
-                HierarchicalNamespaceTraversal(self._nstypename),
+                traverse=HierarchicalNamespaceTraversal(self._nstypename, colorize),
                 draw=BoxStyle(gfx=BOX_LIGHT, horiz_len=2)
             )(self._roots))
 
+
+class PIDNamespaceIndex(HierarchicalNamespaceIndex):
+    """An index of PID namespaces."""
+
+    def __init__(self) -> None:
+        super().__init__(CLONE_NEWPID)
+
+
+class UserNamespaceIndex(HierarchicalNamespaceIndex):
+    """An index of user namespaces."""
+
+    def __init__(self, details: bool = False) -> None:
+        super().__init__(CLONE_NEWUSER)
+        self.details = details
+        if self.details:
+            print('DISCOVERING DETAILS...')
+            self._discover_ownedns()
+
+    def _discover_ownedns(self) -> None:
+        """Discovers non-user namespaces with their owning user namespaces."""
+        namespaces = dict()  # type: Dict[int, None]
+        for process in psutil.process_iter():
+            try:
+                for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
+                    ns_ref = '/proc/%d/ns/%s' % (process.pid, ns_type)
+                    ns_id = os.stat(ns_ref).st_ino
+                    if ns_id not in namespaces:
+                        namespaces[ns_id] = None
+                        with get_userns(ns_ref) as owner_f:
+                            owner_userns_id = os.stat(owner_f.fileno()).st_ino
+                        proc_name = self._discover_proc_name(process, ns_id)
+                        owner = self._index[owner_userns_id]
+                        owner.owned_ns[ns_type].append(
+                            Namespace(ns_id, ns_type, proc_name))
+            except PermissionError:
+                pass
+
+    def render(self, colorize: bool = False) -> None:
+        """Renders an ASCII tree using our user hierarchical namespace
+        traversal object."""
+        print(
+            asciitree.LeftAligned(
+                traverse=UserNamespaceTraversal(self._nstypename, colorize),
+                draw=BoxStyle(gfx=BOX_LIGHT, horiz_len=2)
+            )(self._roots))
+
+
+class HierarchicalNamespaceTraversal(Traversal):
+    """Traverses a tree of hierarchical namespace objects."""
+
+    def __init__(self, namespace_type_name: str, colorize: bool) -> None:
+        super().__init__()
+        self._namespace_type_name = namespace_type_name
+        self.colorize = colorize
+
+    def get_root(self, tree: Dict[int, 'HierarchicalNamespace']) \
+            -> 'HierarchicalNamespace':
+        """Return the root node of a tree. In case we get more
+        than a single root of user namespaces, we return a "fake"
+        ro(o)t instead, which then contains the list/tuple of
+        user namespaces. """
+        if len(tree) == 1:
+            return next(iter(tree.values()))
+        fake_root = HierarchicalNamespace(0, 0, 0)
+        fake_root.children = tree.values() # type: ignore
+        return fake_root
+
+    def get_children(self, node: Union['HierarchicalNamespace']) \
+            -> List[Union['HierarchicalNamespace']]:
+        """Returns the list of child user namespaces for a user
+        namespace node, or an empty list in case this is a str node."""
+        return sorted(node.children, key=lambda n: n.id)
+
+    def get_text(self, node: 'HierarchicalNamespace') -> str:
+        """Returns the text for a user namespace node. It
+        consists of the user namespace identifier (inode number).
+        """
+        # It's a hierarchical namespace object...
+        if not node.id:
+            return '?'
+        return '%s:[%d] process%s owner user:[%d] "%s" (%s)' % (
+            self.nstype(self._namespace_type_name), node.id,
+            self.process(' "%s"' % node.proc_name
+                         if node.proc_name else ''),
+            node.ownerns_id,
+            self.user(pwd.getpwuid(node.uid).pw_name),
+            self.user(str(node.uid)))
+
+    def nstype(self, s: str) -> str:
+        return sty.ef.bold + s + sty.rs.all if self.colorize else s
+
+    def process(self, s: str) -> str:
+        return sty.fg.da_green + s + sty.rs.fg if self.colorize else s
+
+    def user(self, s: str) -> str:
+        return sty.fg.da_yellow + s + sty.rs.fg if self.colorize else s
+
+    def owned(self, s: str) -> str:
+        return sty.fg.blue + s + sty.rs.fg if self.colorize else s
+
+class UserNamespaceTraversal(HierarchicalNamespaceTraversal):
+    """Traverses a tree of user namespace objects. Compared to the generic
+    hierarchical namespace traverser, this traverser can optionally traverse
+    additional details, such as the owned namespaces.
+    """
+
+    def get_children(self, node: Union['HierarchicalNamespace', 'Namespace']) \
+            -> List[Union['HierarchicalNamespace', 'Namespace']]:
+        """Returns the list of child user namespaces for a user
+        namespace node, and optionally the owned namespaces, if these details
+        have also been discovered."""
+        # Note that we will be also asked for the children of owned, flat
+        # namespaces: in this case we simply return an empty list.
+        if isinstance(node, Namespace):
+            return []
+        owned = [ns \
+            for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts') \
+                for ns in node.owned_ns[ns_type]]
+        return sorted(owned, key=lambda n: "%s%d" % (n.ns_type, n.id)) + \
+            super().get_children(node) # type: ignore
+
+    def get_text(self, node: Union['HierarchicalNamespace', 'Namespace']) -> str:
+        """Returns the text for a namespace node. This can be either a
+        hierarchical namespace node, or an owned namespace node.
+        """
+        if isinstance(node, Namespace):
+            return "⟜ %s:[%d] process \"%s\"" % (
+                self.owned(node.ns_type),
+                node.id,
+                node.proc_name)
+        return '%s:[%d] process%s namespace-owning user "%s" (%s)' % (
+            self.nstype(self._namespace_type_name), node.id,
+            self.process(' "%s"' % node.proc_name
+                         if node.proc_name else ''),
+            self.user(pwd.getpwuid(node.uid).pw_name),
+            self.user(str(node.uid)))
 
 class Namespace: # pylint: disable=too-few-public-methods
     """A "flat" Linux namespace, identified by its inode number."""
@@ -364,9 +427,13 @@ def lsuserns() -> None:
         '-d', '--details', action='store_true',
         help='show details: owned non-user namespaces'
     )
+    parser.add_argument(
+        '-c', '--color', action='store_true',
+        help='colorize output'
+    )
 
     args = parser.parse_args()
-    HierarchicalNamespaceIndex(CLONE_NEWUSER, args.details).render()
+    UserNamespaceIndex(args.details).render(args.color)
 
 
 def lspidns() -> None:
@@ -376,12 +443,16 @@ def lspidns() -> None:
     parser = argparse.ArgumentParser(
         description='Show Linux PID namespace tree.'
     )
+    parser.add_argument(
+        '-c', '--color', action='store_true',
+        help='colorize output'
+    )
 
-    args = parser.parse_args() # pylint: disable=unused-variable
-    HierarchicalNamespaceIndex(CLONE_NEWPID).render()
+    args = parser.parse_args()
+    PIDNamespaceIndex().render(args.color)
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-locals
 def graphns() -> None:
     """graphns CLI: discovers the PID and user namespace and then
     shows them as a graph in a new (SVG) viewer window.
@@ -401,8 +472,8 @@ def graphns() -> None:
     )
 
     args = parser.parse_args()
-    pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
-    userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER, args.details)
+    pidns_index = PIDNamespaceIndex()
+    userns_index = UserNamespaceIndex(args.details)
 
     def ns_node_id(xns: Union[HierarchicalNamespace, Namespace, int], prefix: str) -> str:
         """Returns a unique, but predictable node identifier for a namespace."""

@@ -1,3 +1,4 @@
 [TYPECHECK]
 ignored-classes=SubgraphContext
 good-names=f,nr,ns,id,g
+disable=bad-option-value

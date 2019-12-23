@@ -18,7 +18,7 @@ a tree hierarchy to the console."""
 
 import os
 import pwd
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, IO, List, Optional, Tuple, Union
 
 import psutil
 
@@ -52,11 +52,11 @@ class HierarchicalNamespaceIndex:
         self._details = details
         # Dictionary of user/PID namespaces, indexed by their inode
         # numbers.
-        self._index = dict() # type: Dict[int, 'HierarchicalNamespace']
+        self._index = dict() # type: Dict[int, HierarchicalNamespace]
         # Dictionary of root namespace(s), indexed by their inode
         # numbers (again). Normally, this should only show a single
         # root, unless we have limited visibility.
-        self._roots = dict() # type: Dict[int, 'HierarchicalNamespace']
+        self._roots = dict() # type: Dict[int, HierarchicalNamespace]
         self._discover_from_proc()
         self._discover_missing_parents()
         if self._details:
@@ -120,7 +120,7 @@ class HierarchicalNamespaceIndex:
 
     def _discover_ownedns(self) -> None:
         """Discovers non-user namespaces with their owning user namespaces."""
-        namespaces = dict()  # type: Dict[int, Optional[]]
+        namespaces = dict()  # type: Dict[int, None]
         for process in psutil.process_iter():
             try:
                 for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
@@ -181,8 +181,9 @@ class HierarchicalNamespaceIndex:
         # fine, as we recursively discover parent namespaces starting
         # from each namespace from phase one.
         for _, ns in self._index.copy().items():
-            ns_ref = None
+            ns_ref = None # type: Optional[IO]
             try:
+                assert ns.nsref is not None
                 ns_ref = open(ns.nsref)
                 while ns_ref:
                     ns_id = os.stat(ns_ref.fileno()).st_ino
@@ -221,7 +222,7 @@ class HierarchicalNamespaceIndex:
                 # Whatever has happened, make sure to *not* leak (or,
                 # rather waste) the user namespace file reference.
                 if ns_ref:
-                    ns_ref.close()
+                    ns_ref.close() # type: ignore
 
     class HierarchicalNamespaceTraversal(Traversal):
         """Traverses a tree of user namespace objects."""
@@ -230,7 +231,7 @@ class HierarchicalNamespaceIndex:
             super().__init__()
             self._namespace_type_name = namespace_type_name
 
-        def get_root(self, tree: [Dict[int, 'HierarchicalNamespace']]) \
+        def get_root(self, tree: Dict[int, 'HierarchicalNamespace']) \
                 -> 'HierarchicalNamespace':
             """Return the root node of a tree. In case we get more
             than a single root of user namespaces, we return a "fake"
@@ -239,11 +240,11 @@ class HierarchicalNamespaceIndex:
             if len(tree) == 1:
                 return next(iter(tree.values()))
             fake_root = HierarchicalNamespace(0, 0, 0)
-            fake_root.children = tree.values()
+            fake_root.children = tree.values() # type: ignore
             return fake_root
 
         def get_children(self, node: Union['HierarchicalNamespace', 'Namespace']) \
-                -> List['HierarchicalNamespace']:
+                -> List[Union['HierarchicalNamespace', 'Namespace']]:
             """Returns the list of child user namespaces for a user
             namespace node, or an empty list in case this is a str node."""
             if isinstance(node, Namespace):
@@ -254,7 +255,7 @@ class HierarchicalNamespaceIndex:
                 for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts') \
                     for ns in node.owned_ns[ns_type]]
             return sorted(owned, key=lambda n: "%s%d" % (n.ns_type, n.id)) + \
-                sorted(node.children, key=lambda n: n.id)
+                sorted(node.children, key=lambda n: n.id) # type: ignore
 
         def get_text(self, node: Union['HierarchicalNamespace', 'Namespace']) -> str:
             """Returns the text for a user namespace node. It
@@ -329,16 +330,16 @@ class HierarchicalNamespace: # pylint: disable=too-many-instance-attributes,too-
         self.id = nsid
         self.nsref = nsref
         self.ownerns_id = ownerns_id
-        self.owned_ns = dict()  # type: Dict[str, List[int]]
+        self.owned_ns = dict()  # type: Dict[str, List[Namespace]]
         for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
             self.owned_ns[ns_type] = []
         self.uid = uid
         self.proc_name = proc_name
-        self._parent = None  # type: 'HierarchicalNamespace'
-        self.children = []  # type: List['HierarchicalNamespace']
+        self._parent = None  # type: Optional[HierarchicalNamespace]
+        self.children = []  # type: List[HierarchicalNamespace]
 
     @property
-    def parent(self) -> 'HierarchicalNamespace':
+    def parent(self) -> Optional['HierarchicalNamespace']:
         """Gets or sets the parent user namespace. Setting the parent
         will also add this user namespace to the children user
         namespaces of the parent user namespace.
@@ -403,9 +404,9 @@ def graphns() -> None:
     pidns_index = HierarchicalNamespaceIndex(CLONE_NEWPID)
     userns_index = HierarchicalNamespaceIndex(CLONE_NEWUSER, args.details)
 
-    def ns_node_id(xns: [HierarchicalNamespace, int], prefix: str) -> str:
+    def ns_node_id(xns: Union[HierarchicalNamespace, Namespace, int], prefix: str) -> str:
         """Returns a unique, but predictable node identifier for a namespace."""
-        if hasattr(xns, 'id'):
+        if not isinstance(xns, int):
             return '%s-%d' % (prefix, xns.id)
         return '%s-%d' % (prefix, xns)
 
@@ -424,7 +425,7 @@ def graphns() -> None:
         if xns.owned_ns:
             for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'uts'):
                 if len(xns.owned_ns[ns_type]) > 1:
-                    dot.node('owned-%s-%d' % (ns_type, xns.id), 
+                    dot.node('owned-%s-%d' % (ns_type, xns.id),
                              ns_type,
                              shape='folder',
                              style='filled')

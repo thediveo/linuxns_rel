@@ -319,20 +319,36 @@ class HierarchicalNamespaceTraversal(Traversal):
             self.user(pwd.getpwuid(node.uid).pw_name),
             self.user(str(node.uid)))
 
-    def nstype(self, s: str) -> str: # pylint: disable=missing-function-docstring
-        return sty.ef.bold + s + sty.rs.bold_dim if self.colorize else s
+    NSTYPECOLORS = {
+        'cgroup': sty.fg.red,
+        'ipc': sty.fg.yellow,
+        'mnt': sty.fg.blue,
+        'net': sty.fg.green,
+        'uts': sty.fg.li_magenta,
+        'user': sty.bg.white,
+        'pid': sty.bg.cyan + sty.fg.white
+    }
 
-    def process(self, s: str) -> str: # pylint: disable=missing-function-docstring
+    def nstype(self, s: str) -> str:
+        """Optionally colorizes given namespace string according to its namespace
+        type."""
+        if not self.colorize:
+            return s
+        nstype = s.split(':', maxsplit=1)[0]
+        bold = sty.ef.bold if nstype in ['pid', 'user'] else ''
+        return bold + self.NSTYPECOLORS[nstype] + s + sty.rs.fg + sty.rs.bg + sty.rs.bold_dim
+
+    def process(self, s: str) -> str:
+        """Optionally colorizes a process name."""
         return sty.fg.da_green + s + sty.rs.fg if self.colorize else s
 
-    def user(self, s: str) -> str: # pylint: disable=missing-function-docstring
+    def user(self, s: str) -> str:
+        """Optionally colorizes a user name"""
         return sty.fg.da_yellow + s + sty.rs.fg if self.colorize else s
 
-    def owned(self, s: str) -> str: # pylint: disable=missing-function-docstring
-        if s == 'pid':
-            return sty.ef.bold + sty.fg.da_blue + s + sty.rs.fg + sty.rs.bold_dim \
-                if self.colorize else s
-        return sty.fg.blue + s + sty.rs.fg if self.colorize else s
+    def owned(self, s: str) -> str:
+        """Optionally colorizes an owned namespace according to its type."""
+        return self.nstype(s)
 
 class UserNamespaceTraversal(HierarchicalNamespaceTraversal):
     """Traverses a tree of user namespace objects. Compared to the generic

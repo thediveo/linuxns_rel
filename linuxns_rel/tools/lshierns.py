@@ -156,7 +156,9 @@ class HierarchicalNamespaceIndex:
         return '%s (%d)' % (proc_name, process.pid)
 
     def _discover_missing_parents(self) -> None:
-        """."""
+        """Discover user or PID namespaces that aren't visible through
+        through the file system anymore, but only via the namespace
+        ioctls."""
         # Next in phase two, we now discover the parent-child relationships of
         # the hierarchical namespaces discovered during phase one. The
         # unexpected surprise here is that we may find parent namespaces that
@@ -383,7 +385,7 @@ class UserNamespaceTraversal(HierarchicalNamespaceTraversal):
         return '%s:[%d] process%s namespace-owning user "%s" (%s)' % (
             self.nstype(self._namespace_type_name), node.id,
             self.process(' "%s"' % node.proc_name
-                         if node.proc_name else ''),
+                         if node.proc_name else ' (none)'),
             self.user(pwd.getpwuid(node.uid).pw_name),
             self.user(str(node.uid)))
 
@@ -407,7 +409,7 @@ class PIDNamespaceTraversal(HierarchicalNamespaceTraversal):
         return '%s:[%d] process%s owner %s:[%d] (process%s) "%s" (%s)' % (
             self.nstype(self._namespace_type_name), node.id,
             self.process(' "%s"' % node.proc_name
-                         if node.proc_name else ''),
+                         if node.proc_name else ' (none)'),
             self.nstype('user'),
             node.ownerns_id,
             self.ownerprocess(' "%s"' % owner_proc_name),

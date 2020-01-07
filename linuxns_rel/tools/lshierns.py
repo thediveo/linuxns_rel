@@ -147,7 +147,16 @@ class HierarchicalNamespaceIndex:
         # login shell. In case the process' command line is inaccessible to
         # us, then go for the process name.
         try:
-            proc_name = process.cmdline()[0].split('/')[-1]
+            cmdline = process.cmdline()
+            proc_name = cmdline[0].split('/')[-1]
+            # ugly heuristics to detect stupid processes setting their
+            # /proc/$PID/cmdline as a single string, not as an array with
+            # \0 separators.
+            if len(cmdline) == 1:
+                for idx, item in enumerate(proc_name.split(' ')[1:]):
+                    if item.startswith('-'):
+                        proc_name = ' '.join(proc_name.split(' ')[:1+idx])
+                        break
         except IndexError:
             # Mimic what the "ps" CLI tool does in case of process names...
             proc_name = "[%s]" % process.name()

@@ -133,7 +133,7 @@ from typing import Union, IO
 
 
 # library/package semantic version
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 
 # Linux namespace type constants; these are used with several of the
 # namespace related functions, such as clone() in particular, but also

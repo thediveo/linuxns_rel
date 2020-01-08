@@ -16,6 +16,7 @@ a tree hierarchy to the console."""
 # permissions and limitations under the License.
 
 
+import re
 import os
 import pwd
 from typing import Dict, IO, List, Optional, Tuple, Union
@@ -32,6 +33,10 @@ from linuxns_rel import (
     get_parentns, get_userns, get_owner_uid,
     CLONE_NEWUSER, CLONE_NEWPID)
 
+
+NSRE = re.compile('^(%s):\\[(\\d+)\\]$' % '|'.join(
+    ['cgroup', 'ipc', 'mnt', 'net', 'pid', 'user', 'uts']))
+"""Regular expression matching <nstype>:[<nsid>]."""
 
 class HierarchicalNamespaceIndex:
     """An index to lookup namespaces by their id (inode number) and their
@@ -62,6 +67,7 @@ class HierarchicalNamespaceIndex:
         # root, unless we have limited visibility.
         self._roots = dict() # type: Dict[int, HierarchicalNamespace]
         self._discover_from_proc()
+        self._discover_from_fd()
         self._discover_missing_parents()
 
     def __getitem__(self, item: int) -> 'HierarchicalNamespace':
@@ -164,10 +170,37 @@ class HierarchicalNamespaceIndex:
             proc_name = proc_name[1:]
         return '%s (%d)' % (proc_name, process.pid)
 
+    def _discover_from_fd(self) -> None:
+        """Discovers namespaces from open fds, via `/proc/[PID]/fd/[FD]`."""
+        # Skimming the open file descriptors of processes, we might find
+        # namespace references which aren't visible in /proc/[PID]/ns/* nor in
+        # bind-mounts.
+        for process in psutil.process_iter():
+            try:
+                for fdentry in os.scandir('/proc/%d/fd' % process.pid):
+                    if not fdentry.is_symlink():
+                        continue
+                    nsmatch = NSRE.match(os.readlink(fdentry.path))
+                    if not nsmatch or nsmatch.group(1) != self._nstypename:
+                        continue
+                    try:
+                        ns_id = int(nsmatch.group(2))
+                        if ns_id not in self._index:
+                            with open(fdentry.path) as ns_f:
+                                owner_uid, ownerns_id = self._get_owner(ns_f)
+                                self._index[ns_id] = HierarchicalNamespace(
+                                    ns_id, owner_uid, ownerns_id,
+                                    proc_name='',
+                                    nsref=fdentry.path)    
+                    except ValueError:
+                        pass
+            except PermissionError:
+                pass
+
     def _discover_missing_parents(self) -> None:
-        """Discover user or PID namespaces that aren't visible through
-        through the file system anymore, but only via the namespace
-        ioctls."""
+        """Discovers user or PID namespaces that aren't visible through the
+        file system anymore, but only via the namespace ioctls.
+        """
         # Next in phase two, we now discover the parent-child relationships of
         # the hierarchical namespaces discovered during phase one. The
         # unexpected surprise here is that we may find parent namespaces that
@@ -239,7 +272,8 @@ class PIDNamespaceIndex(HierarchicalNamespaceIndex):
         """
         super().__init__(CLONE_NEWPID)
 
-    def render(self, usernsidx: Optional['UserNamespaceIndex'] = None, colorize: bool = False) -> None:
+    def render(self, usernsidx: Optional['UserNamespaceIndex'] = None, \
+        colorize: bool = False) -> None:
         """Renders an ASCII tree using our hierarchical namespace
         traversal object."""
         print(
@@ -266,6 +300,7 @@ class UserNamespaceIndex(HierarchicalNamespaceIndex):
         namespaces = dict()  # type: Dict[int, None]
         for process in psutil.process_iter():
             try:
+                # Discover from /proc/[PID]/ns/
                 for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
                     ns_ref = '/proc/%d/ns/%s' % (process.pid, ns_type)
                     ns_id = os.stat(ns_ref).st_ino
@@ -276,7 +311,26 @@ class UserNamespaceIndex(HierarchicalNamespaceIndex):
                         proc_name = self._discover_proc_name(process, ns_id)
                         owner = self._index[owner_userns_id]
                         owner.owned_ns[ns_type].append(
-                            Namespace(ns_id, ns_type, proc_name))
+                            OwnedNamespace(ns_id, ns_type, proc_name))
+                # Discover from /proc/[PID]/fd/
+                for fdentry in os.scandir('/proc/%d/fd' % process.pid):
+                    if not fdentry.is_symlink():
+                        continue
+                    nsmatch = NSRE.match(os.readlink(fdentry.path))
+                    if not nsmatch or nsmatch.group(1) == 'user':
+                        continue
+                    try:
+                        ns_type = nsmatch.group(1)
+                        ns_id = int(nsmatch.group(2))
+                        if ns_type != 'user' and ns_id not in namespaces:
+                            namespaces[ns_id] = None
+                            with get_userns(fdentry.path) as owner_f:
+                                owner_userns_id = os.stat(owner_f.fileno()).st_ino
+                            owner = self._index[owner_userns_id]
+                            owner.owned_ns[ns_type].append(
+                                OwnedNamespace(ns_id, ns_type, ''))
+                    except ValueError:
+                        pass
             except PermissionError:
                 pass
 
@@ -367,14 +421,14 @@ class UserNamespaceTraversal(HierarchicalNamespaceTraversal):
     additional details, such as the owned namespaces.
     """
 
-    def get_children(self, node: Union['HierarchicalNamespace', 'Namespace']) \
-            -> List[Union['HierarchicalNamespace', 'Namespace']]:
+    def get_children(self, node: Union['HierarchicalNamespace', 'OwnedNamespace']) \
+            -> List[Union['HierarchicalNamespace', 'OwnedNamespace']]:
         """Returns the list of child user namespaces for a user
         namespace node, and optionally the owned namespaces, if these details
         have also been discovered."""
         # Note that we will be also asked for the children of owned, flat
         # namespaces: in this case we simply return an empty list.
-        if isinstance(node, Namespace):
+        if isinstance(node, OwnedNamespace):
             return []
         owned = [ns \
             for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts') \
@@ -382,16 +436,16 @@ class UserNamespaceTraversal(HierarchicalNamespaceTraversal):
         return sorted(owned, key=lambda n: "%s%d" % (n.ns_type, n.id)) + \
             super().get_children(node) # type: ignore
 
-    def get_text(self, node: Union['HierarchicalNamespace', 'Namespace']) -> str:
+    def get_text(self, node: Union['HierarchicalNamespace', 'OwnedNamespace']) -> str:
         """Returns the text for a namespace node. This can be either a
         hierarchical namespace node, or an owned namespace node.
         """
-        if isinstance(node, Namespace):
-            return "⟜ %s:[%d] process \"%s\"" % (
+        if isinstance(node, OwnedNamespace):
+            return "⟜ %s:[%d] process %s" % (
                 self.owned(node.ns_type),
                 node.id,
-                self.process(node.proc_name if node.proc_name else '-'))
-        return '%s:[%d] process%s namespace-owning user "%s" (%s)' % (
+                self.process('"%s"' % node.proc_name if node.proc_name else '(none)'))
+        return '%s:[%d] process%s namespace owner "%s" (%s)' % (
             self.nstype(self._namespace_type_name), node.id,
             self.process(' "%s"' % node.proc_name
                          if node.proc_name else ' (none)'),
@@ -428,8 +482,10 @@ class PIDNamespaceTraversal(HierarchicalNamespaceTraversal):
     def ownerprocess(self, s: str) -> str: # pylint: disable=missing-function-docstring
         return sty.fg.green + s + sty.rs.fg if self.colorize else s
 
-class Namespace: # pylint: disable=too-few-public-methods
-    """A "flat" Linux namespace, identified by its inode number."""
+class OwnedNamespace: # pylint: disable=too-few-public-methods
+    """A Linux namespace owned by a user namespace, and identified by its inode
+    number.
+    """
 
     def __init__(self, nsid: int, nstype: str, proc_name: Optional[str] = None) -> None:
         """Represents a flat Linux namespace.
@@ -467,7 +523,7 @@ class HierarchicalNamespace: # pylint: disable=too-many-instance-attributes,too-
         self.id = nsid
         self.nsref = nsref
         self.ownerns_id = ownerns_id
-        self.owned_ns = dict()  # type: Dict[str, List[Namespace]]
+        self.owned_ns = dict()  # type: Dict[str, List[OwnedNamespace]]
         for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
             self.owned_ns[ns_type] = []
         self.uid = uid
@@ -549,7 +605,7 @@ def graphns() -> None:
     pidns_index = PIDNamespaceIndex()
     userns_index = UserNamespaceIndex(args.details)
 
-    def ns_node_id(xns: Union[HierarchicalNamespace, Namespace, int], prefix: str) -> str:
+    def ns_node_id(xns: Union[HierarchicalNamespace, OwnedNamespace, int], prefix: str) -> str:
         """Returns a unique, but predictable node identifier for a namespace."""
         if not isinstance(xns, int):
             return '%s-%d' % (prefix, xns.id)

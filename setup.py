@@ -56,6 +56,7 @@ setup(
     install_requires=[
         'psutil',
         'asciitree',
+        'termcolor',
         'graphviz',
         'PyQt5' + pyqt5_version
     ],

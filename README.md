@@ -43,8 +43,17 @@ on GitHub Pages.
 ### List User Namespaces
 
 You can either use a simple `lsuserns` or `sudo lsuserns` -- the latter
-ensures that you'll see _all_ user namespaces instead of only those you
-have user access to.
+ensures that you'll see _all_ user namespaces instead of only those you have
+user access to. Optionally, you can also see which other namespaces are owned
+by specific user namespaces.
+
+> **NOTE:** `lsuserns` (and `lspidns`) discover user and pid namespaces from
+> more locations than `lsns` does:
+>
+> - `/proc/$PID/ns/` (*the only location supported by `lsns`*)
+> - `/proc/$PID/fd/` (open file descriptors referencing namespaces; only
+>   `lsuserns` atm)
+> - namespace `ioctl()` (see "man 2 ioctl_ns")
 
 ```bash
 $ sudo lsuserns
@@ -71,6 +80,9 @@ If you want to additionally see which non-user namespaces are owned by the user 
 ```bash
 $ sudo lsuserns -d
 ```
+
+> **NOTE:** `-c` colorizes the output, differentiating namespaces in color
+> based on their types.
 
 In the output, "⟜" denotes a non-user namespace (ipc, mnt, net, ...) which is
 owned by a particular user namespace.

@@ -29,6 +29,7 @@ import asciitree.traversal
 from asciitree.drawing import BoxStyle, BOX_LIGHT
 from asciitree.traversal import Traversal
 
+import linuxns_rel
 from linuxns_rel import (
     get_parentns, get_userns, get_owner_uid,
     CLONE_NEWUSER, CLONE_NEWPID)
@@ -154,15 +155,18 @@ class HierarchicalNamespaceIndex:
         # us, then go for the process name.
         try:
             cmdline = process.cmdline()
-            proc_name = cmdline[0].split('/')[-1]
+            proc_name = cmdline[0]
             # ugly heuristics to detect stupid processes setting their
             # /proc/$PID/cmdline as a single string, not as an array with
             # \0 separators.
             if len(cmdline) == 1:
-                for idx, item in enumerate(proc_name.split(' ')[1:]):
+                cmdline = cmdline[0].split(' ')
+                for idx, item in enumerate(cmdline[1:]):
                     if item.startswith('-'):
-                        proc_name = ' '.join(proc_name.split(' ')[:1+idx])
+                        proc_name = ' '.join(cmdline[:1+idx])
                         break
+            # shorten full path of command to only the last element.
+            proc_name = proc_name.split('/')[-1]
         except IndexError:
             # Mimic what the "ps" CLI tool does in case of process names...
             proc_name = "[%s]" % process.name()
@@ -191,7 +195,7 @@ class HierarchicalNamespaceIndex:
                                 self._index[ns_id] = HierarchicalNamespace(
                                     ns_id, owner_uid, ownerns_id,
                                     proc_name='',
-                                    nsref=fdentry.path)    
+                                    nsref=fdentry.path)
                     except ValueError:
                         pass
             except PermissionError:
@@ -561,6 +565,10 @@ def lsuserns() -> None:
         '-c', '--color', action='store_true',
         help='colorize output'
     )
+    parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s ' + linuxns_rel.__version__
+    )
 
     args = parser.parse_args()
     UserNamespaceIndex(args.details).render(args.color)
@@ -576,6 +584,10 @@ def lspidns() -> None:
     parser.add_argument(
         '-c', '--color', action='store_true',
         help='colorize output'
+    )
+    parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s ' + linuxns_rel.__version__
     )
 
     args = parser.parse_args()
@@ -599,6 +611,10 @@ def graphns() -> None:
     parser.add_argument(
         '-d', '--details', action='store_true',
         help='show details: owned non-user namespaces'
+    )
+    parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s ' + linuxns_rel.__version__
     )
 
     args = parser.parse_args()

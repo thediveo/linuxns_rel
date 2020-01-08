@@ -56,15 +56,17 @@ setup(
     install_requires=[
         'psutil',
         'asciitree',
-        'sty',
-        'graphviz',
-        'PyQt5' + pyqt5_version
+        'sty'
     ],
     extras_require={
         'dev': [
             'coverage',
             'sphinx',
             'sphinx_rtd_theme'
+        ],
+        'graph': [
+            'graphviz',
+            'PyQt5' + pyqt5_version
         ]
     }
 )

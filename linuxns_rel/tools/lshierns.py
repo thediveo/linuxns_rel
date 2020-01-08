@@ -303,9 +303,9 @@ class UserNamespaceIndex(HierarchicalNamespaceIndex):
         """Discovers non-user namespaces with their owning user namespaces."""
         namespaces = dict()  # type: Dict[int, None]
         for process in psutil.process_iter():
-            try:
-                # Discover from /proc/[PID]/ns/
-                for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
+            # Discover from /proc/[PID]/ns/
+            for ns_type in ('cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts'):
+                try:
                     ns_ref = '/proc/%d/ns/%s' % (process.pid, ns_type)
                     ns_id = os.stat(ns_ref).st_ino
                     if ns_id not in namespaces:
@@ -316,24 +316,30 @@ class UserNamespaceIndex(HierarchicalNamespaceIndex):
                         owner = self._index[owner_userns_id]
                         owner.owned_ns[ns_type].append(
                             OwnedNamespace(ns_id, ns_type, proc_name))
-                # Discover from /proc/[PID]/fd/
+                except PermissionError:
+                    pass
+            # Discover from /proc/[PID]/fd/
+            try:
                 for fdentry in os.scandir('/proc/%d/fd' % process.pid):
-                    if not fdentry.is_symlink():
-                        continue
-                    nsmatch = NSRE.match(os.readlink(fdentry.path))
-                    if not nsmatch or nsmatch.group(1) == 'user':
-                        continue
                     try:
-                        ns_type = nsmatch.group(1)
-                        ns_id = int(nsmatch.group(2))
-                        if ns_type != 'user' and ns_id not in namespaces:
-                            namespaces[ns_id] = None
-                            with get_userns(fdentry.path) as owner_f:
-                                owner_userns_id = os.stat(owner_f.fileno()).st_ino
-                            owner = self._index[owner_userns_id]
-                            owner.owned_ns[ns_type].append(
-                                OwnedNamespace(ns_id, ns_type, ''))
-                    except ValueError:
+                        if not fdentry.is_symlink():
+                            continue
+                        nsmatch = NSRE.match(os.readlink(fdentry.path))
+                        if not nsmatch or nsmatch.group(1) == 'user':
+                            continue
+                        try:
+                            ns_type = nsmatch.group(1)
+                            ns_id = int(nsmatch.group(2))
+                            if ns_type != 'user' and ns_id not in namespaces:
+                                namespaces[ns_id] = None
+                                with get_userns(fdentry.path) as owner_f:
+                                    owner_userns_id = os.stat(owner_f.fileno()).st_ino
+                                owner = self._index[owner_userns_id]
+                                owner.owned_ns[ns_type].append(
+                                    OwnedNamespace(ns_id, ns_type, ''))
+                        except ValueError:
+                            pass
+                    except PermissionError:
                         pass
             except PermissionError:
                 pass
